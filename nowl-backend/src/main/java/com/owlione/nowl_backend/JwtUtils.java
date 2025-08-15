@@ -24,6 +24,7 @@ public class JwtUtils {
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userPrincipal.getId()))
+                .claim("id", userPrincipal.getId())
                 .claim("role", userPrincipal.getAuthorities().stream()
                         .map(a -> a.getAuthority())
                         .findFirst()
