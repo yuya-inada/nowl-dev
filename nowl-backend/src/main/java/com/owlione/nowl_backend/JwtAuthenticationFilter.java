@@ -4,67 +4,60 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.lang.NonNull;  // ←追加
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+    private final UserDetailsServiceImpl userDetailsService;
 
-    public JwtAuthenticationFilter(JwtUtils jwtUtils) {
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsServiceImpl userDetailsService) {
         this.jwtUtils = jwtUtils;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
-    protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain) throws ServletException, IOException {
 
-        // ─── 追加部分 ───
-        String path = request.getRequestURI();
-        System.out.println("JwtAuthenticationFilter path: " + path);
+    String path = request.getRequestURI();
 
-        // /auth/test-password だけ JWT チェックをスキップ
-        if (path.equals("/auth/test-password")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            try {
-                var claims = jwtUtils.validateToken(token);
-                String username = claims.getSubject();
-                String role = claims.get("role", String.class);
-
-                System.out.println("JWT username: " + username + ", role: " + role);
-                // role の値がすでに ROLE_ で始まっていたらそのまま、そうでなければ付与
-                String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-                var auth = new UsernamePasswordAuthenticationToken(
-                    username,
-                    null,
-                    List.of(new SimpleGrantedAuthority(authority))
-                );
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                System.out.println("Authentication set: " + SecurityContextHolder.getContext().getAuthentication());
-
-            } catch (Exception e) {
-                SecurityContextHolder.clearContext();
-            }
-        }
-
+    // 認証不要のパスをスキップ
+    if (path.equals("/") || path.startsWith("/auth") || path.startsWith("/users")) {
         filterChain.doFilter(request, response);
+        return;
     }
+
+    String headerAuth = request.getHeader("Authorization");
+
+    if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
+        String token = headerAuth.substring(7);
+
+        try {
+            Long userId = jwtUtils.getUserIdFromToken(token);
+            var userDetails = userDetailsService.loadUserById(userId);
+
+            var authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+            );
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (Exception e) {
+            logger.error("Cannot set user authentication: {}", e);
+        }
+    }
+
+    filterChain.doFilter(request, response);
+}
 }
