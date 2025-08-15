@@ -59,10 +59,15 @@ public class UserController {
     }
 
     // すべてのユーザー取得（ADMIN以上）
+    // @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")　開発中はコメントアウト
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public List<User> getAllUsers() {
-        return userService.getAllUsers();
+        try {
+            return userService.getAllUsers();
+        } catch (Exception e) {
+            e.printStackTrace(); // 標準出力にスタックトレース
+            throw e;
+        }
     }
 
     // ユーザー更新（認証済みなら可能）
