@@ -129,10 +129,6 @@ export default function UsersList() {
 
   return (
     <div>
-      <div style={{ marginBottom: "20px", padding: "10px", border: "1px solid #ccc", backgroundColor: "" }}>
-        <strong>ログイン中ユーザー:</strong> {currentUser.username} ({currentUser.role})
-      </div>
-
       <h2>ユーザー一覧</h2>
 
       {/* 新規作成フォーム */}
