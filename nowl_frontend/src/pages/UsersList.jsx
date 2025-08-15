@@ -33,8 +33,9 @@ export default function UsersList() {
     if (token) {
       try {
         const decoded = jwtDecode(token); // { sub: username, role: "ROLE_USER", id: 21, ... }
+        console.log("JWT decoded:", decoded);
         setCurrentUser({
-          id: decoded.id || null,
+          id: Number(decoded.sub) || null,
           username: decoded.sub || "unknown",
           role: decoded.role || "ROLE_USER"
         });
@@ -203,7 +204,7 @@ export default function UsersList() {
               <td>
                 {/* 編集ボタン: SUPERADMIN は全員、ADMIN以上は自分のみ */}
                 {((currentUser.role === "ROLE_SUPERADMIN") || 
-                  (currentUser.role === "ROLE_ADMIN" && currentUser.id === user.id)) && (
+                  (Number(currentUser.id) === Number(user.id))) && (
                   <button onClick={() => startEditing(user)}>編集</button>
                 )}
                 {" "}
