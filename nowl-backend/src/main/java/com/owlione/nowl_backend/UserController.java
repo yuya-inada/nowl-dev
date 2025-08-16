@@ -46,18 +46,22 @@ public class UserController {
     public record UserResponse(Long id, String username, String email, String role, java.time.LocalDateTime createdAt) {}
 
     // 全ユーザー取得
-    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('USER')")
     @GetMapping
     public List<User> getAllUsers(Authentication authentication) {
         UserDetailsImpl currentUser = (UserDetailsImpl) authentication.getPrincipal();
-        String currentRole = currentUser.getAuthorities().iterator().next().getAuthority();
-
-        if ("ROLE_USER".equals(currentRole)) {
+        System.out.println("Current user: " + currentUser.getUsername() + " / Authorities: " + currentUser.getAuthorities());
+    
+        boolean isSuperAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPERADMIN".equals(a.getAuthority()));
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+    
+        if (!isSuperAdmin && !isAdmin) {
             return List.of(userService.getUserById(currentUser.getId())
                     .orElseThrow(() -> new RuntimeException("User not found")));
         }
-
-        // ADMIN / SUPERADMIN は全ユーザー取得可能
+    
         return userService.getAllUsers();
     }
 

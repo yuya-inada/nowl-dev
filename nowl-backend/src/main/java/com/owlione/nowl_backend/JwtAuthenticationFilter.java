@@ -10,6 +10,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
+import io.jsonwebtoken.Claims;                    // JWT Claims
+import org.springframework.security.core.GrantedAuthority;  // Spring Security 権限
+import org.springframework.security.core.authority.SimpleGrantedAuthority; // 単一権限
+import java.util.List;
 
 import java.io.IOException;
 
@@ -34,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // 認証不要のパスをスキップ
-        if (path.equals("/") || path.startsWith("/auth") || path.startsWith("/users")) {
+        if (path.equals("/") || path.startsWith("/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,10 +52,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = jwtUtils.getUserIdFromToken(token);
                 var userDetails = userDetailsService.loadUserById(userId);
 
+                Claims claims = jwtUtils.validateToken(token);
+                String role = claims.get("role", String.class); // JWT の role を取得
+                List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+
                 var authentication = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
-                        userDetails.getAuthorities()
+                        authorities
                 );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
