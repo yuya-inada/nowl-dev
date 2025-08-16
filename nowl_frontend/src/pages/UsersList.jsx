@@ -19,7 +19,7 @@ export default function UsersList() {
   // ユーザー一覧取得
   const fetchUsers = () => {
     fetch("http://localhost:8080/users", {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
+      headers: { "Authorization": `Bearer ${localStorage.getItem("jwt")}` }
     })
       .then(res => {
         if (!res.ok) {
@@ -34,7 +34,7 @@ export default function UsersList() {
 
   // JWT デコードして currentUser をセット
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("jwt");
     if (token) {
       try {
         const decoded = jwtDecode(token); // { sub: username, role: "ROLE_USER", id: 21, ... }
@@ -58,7 +58,7 @@ export default function UsersList() {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+        "Authorization": `Bearer ${localStorage.getItem("jwt")}`
       },
       body: JSON.stringify({
         username: newUsername,
@@ -99,7 +99,7 @@ export default function UsersList() {
       method: "PUT",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+        "Authorization": `Bearer ${localStorage.getItem("jwt")}`
       },
       body: JSON.stringify({
         username: editUsername,

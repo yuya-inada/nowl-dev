@@ -2,23 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-router-dom";
 import UsersList from "./pages/UsersList";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import * as jwtDecode from "jwt-decode";
 
 export default function App() {
   const [message, setMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
-
-  // --- ここで定義 ---
-  // const appStyle = {
-  //   backgroundColor: "#f9f9f9",
-  //   color: "#212121",
-  //   minHeight: "100vh",
-  //   width: "100vw",
-  //   display: "flex",
-  //   flexDirection: "column",
-  //   alignItems: "center",
-  //   padding: "2rem",
-  // };
 
   // APIメッセージ取得
   useEffect(() => {
@@ -37,7 +26,12 @@ export default function App() {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        setCurrentUser({ id: decoded.id, username: decoded.username, role: decoded.role });
+        const role = decoded.role || "ROLE_USER";
+        setCurrentUser({
+          id: decoded.id || null,
+          username: decoded.sub || "unknown",
+          role: role,
+        });
       } catch (e) {
         console.error("Invalid token");
         localStorage.removeItem("jwt");
@@ -55,8 +49,9 @@ export default function App() {
     // <div style={appStyle}>
     <Router>
       <nav style={{ marginBottom: "20px" }}>
-        <Link to="/" style={{ marginRight: "10px" }}>ホーム</Link>
-        <Link to="/users" style={{ marginRight: "10px" }}>ユーザー一覧</Link>
+        <Link to="/" style={{ marginRight: "10px" }}>ホーム（フロント＆バック連携確認）　| </Link>
+        <Link to="/dashboard" style={{ marginRight: "10px" }}>本番用ホーム画面　| </Link>
+        <Link to="/users" style={{ marginRight: "10px" }}>ユーザー一覧　| </Link>
         {!currentUser && <Link to="/login">ログイン</Link>}
       </nav>
 
@@ -91,6 +86,14 @@ export default function App() {
         <Route
           path="/login"
           element={<Login setCurrentUser={setCurrentUser} />}
+        />
+
+        {/* ログイン後の遷移先：ホーム画面 */}
+        <Route
+          path="/dashboard"
+          element={
+            currentUser ? <Dashboard /> : <Navigate to="/login" />
+          }
         />
 
         {/* それ以外はホームにリダイレクト */}
