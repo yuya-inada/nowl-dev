@@ -46,7 +46,6 @@ export default function App() {
   };
 
   return (
-    // <div style={appStyle}>
     <Router>
       <nav style={{ marginBottom: "20px" }}>
         <Link to="/" style={{ marginRight: "10px" }}>ホーム（フロント＆バック連携確認）　| </Link>
@@ -92,7 +91,7 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            currentUser ? <Dashboard /> : <Navigate to="/login" />
+            currentUser ? <Dashboard currentUser={currentUser} /> : <Navigate to="/login" />
           }
         />
 
@@ -100,6 +99,5 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
-  // </div>
   );
 }
