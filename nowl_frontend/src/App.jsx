@@ -26,6 +26,13 @@ export default function App() {
     if (token) {
       try {
         const decoded = jwtDecode(token);
+        // 有効期限チェック  （exp は秒単位なので　＊1000）
+        if(decoded.exp * 1000 < Date.now()){
+          console.warn("Token expired");
+          localStorage.removeItem("jwt");
+          setCurrentUser(null);
+          return;
+        }
         const role = decoded.role || "ROLE_USER";
         setCurrentUser({
           id: decoded.id || null,
@@ -35,6 +42,7 @@ export default function App() {
       } catch (e) {
         console.error("Invalid token");
         localStorage.removeItem("jwt");
+        setCurrentUser(null);
       }
     }
   }, []);
