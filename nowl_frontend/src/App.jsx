@@ -8,6 +8,18 @@ export default function App() {
   const [message, setMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
 
+  // --- ここで定義 ---
+  // const appStyle = {
+  //   backgroundColor: "#f9f9f9",
+  //   color: "#212121",
+  //   minHeight: "100vh",
+  //   width: "100vw",
+  //   display: "flex",
+  //   flexDirection: "column",
+  //   alignItems: "center",
+  //   padding: "2rem",
+  // };
+
   // APIメッセージ取得
   useEffect(() => {
     fetch('http://localhost:8080/')
@@ -40,6 +52,7 @@ export default function App() {
   };
 
   return (
+    // <div style={appStyle}>
     <Router>
       <nav style={{ marginBottom: "20px" }}>
         <Link to="/" style={{ marginRight: "10px" }}>ホーム</Link>
@@ -84,5 +97,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
+  // </div>
   );
 }

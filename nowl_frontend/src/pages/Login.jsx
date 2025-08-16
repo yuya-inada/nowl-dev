@@ -28,14 +28,15 @@ export default function Login({ setCurrentUser }) {
       localStorage.setItem("accessToken", token); // UsersList と名前統一
 
       const decoded = jwtDecode(token);
+      const role = decoded.role || "ROLE_USER";
       setCurrentUser({
         id: decoded.id || null,
         username: decoded.sub || username,
-        role: decoded.role || "ROLE_USER",
+        role: role,
       });
 
       // ログイン成功後にユーザー一覧へ遷移
-      navigate("/users");
+      navigate("/dashboard", { state: { role } });
     } catch (err) {
       console.error(err);
       setError("ログインに失敗しました");
