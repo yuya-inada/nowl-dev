@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link, Navigate } from "react-ro
 import UsersList from "./pages/UsersList";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import * as jwtDecode from "jwt-decode";
+import jwtDecode from "jwt-decode";
 
 export default function App() {
   const [message, setMessage] = useState('');
