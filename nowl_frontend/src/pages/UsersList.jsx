@@ -19,11 +19,15 @@ export default function UsersList() {
   // ユーザー一覧取得
   const fetchUsers = () => {
     fetch("http://localhost:8080/users", {
-      headers: {
-        "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
-      }
+      headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          console.error("Failed to fetch users, status:", res.status);
+          return [];
+        }
+        return res.json();
+      })
       .then(data => setUsers(data))
       .catch(e => console.error(e));
   };
@@ -36,7 +40,7 @@ export default function UsersList() {
         const decoded = jwtDecode(token); // { sub: username, role: "ROLE_USER", id: 21, ... }
         console.log("JWT decoded:", decoded);
         setCurrentUser({
-          id: Number(decoded.sub) || null,
+          id: Number(decoded.id) || null,
           username: decoded.sub || "unknown",
           role: decoded.role || "ROLE_USER"
         });
