@@ -35,10 +35,9 @@ public class SecurityConfig {
                 return config;
             }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/").permitAll()
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/users/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.GET, "/").permitAll()  // health check
+                .requestMatchers("/auth/**").permitAll()           // login/signup
+                .anyRequest().authenticated()                      // その他は認証必須
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

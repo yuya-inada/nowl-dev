@@ -11,6 +11,7 @@ export default function UsersList() {
   const [editUsername, setEditUsername] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
+  const [newRole, setNewRole] = useState("ROLE_USER");
 
   // JWT 連動 currentUser
   const [currentUser, setCurrentUser] = useState({ id: null, username: "unknown", role: "ROLE_USER" });
@@ -58,17 +59,24 @@ export default function UsersList() {
       body: JSON.stringify({
         username: newUsername,
         email: newEmail,
-        password: newPassword
+        password: newPassword,
+        role: newRole
       })
     })
-      .then(res => res.json())
+      .then(res => {
+        if(!res.ok){
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(user => {
         setUsers([...users, user]);
         setNewUsername("");
         setNewEmail("");
         setNewPassword("");
+        setNewRole("ROLE_USER");
       })
-      .catch(e => console.error(e));
+      .catch(e => console.error("作成失敗", e));
   };
 
   // 編集開始
@@ -132,25 +140,43 @@ export default function UsersList() {
       <h2>ユーザー一覧</h2>
 
       {/* 新規作成フォーム */}
-      <div style={{ marginBottom: "20px" }}>
-        <input
-          placeholder="Username"
-          value={newUsername}
-          onChange={e => setNewUsername(e.target.value)}
-        />
-        <input
-          placeholder="Email"
-          value={newEmail}
-          onChange={e => setNewEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={newPassword}
-          onChange={e => setNewPassword(e.target.value)}
-        />
-        <button onClick={createUser}>作成</button>
-      </div>
+      {(currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN") && (
+        <div style={{ marginBottom: "20px", border: "1px solid #ccc", padding: "10px" }}>
+          <h3>新規ユーザー作成</h3>
+          <input
+            placeholder="Username"
+            value={newUsername}
+            onChange={e => setNewUsername(e.target.value)}
+          />
+          <input
+            placeholder="Email"
+            value={newEmail}
+            onChange={e => setNewEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+          />
+          <select
+            value={newRole}
+            onChange={e => setNewRole(e.target.value)}  
+          >
+            {/* USER　は全員作成可能 */}
+            <option value="ROLE_USER">USER</option>
+            {/* ADMIN　と　SUPERADMIN　は　ADMIN　作成可能 */}
+            {(currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN") && (
+              <option value="ROLE_ADMIN">ADMIN</option>
+            )}
+            {/* SUPERADMIN　は　SUPERADMIN者のみ作成可能 */}
+            {currentUser.role === "ROLE_SUPERADMIN" && (
+              <option value="ROLE_SUPERADMIN">SUPERADMIN</option>
+            )}
+          </select>
+          <button onClick={createUser}>作成</button>
+        </div>
+      )}
 
       {/* 編集フォーム */}
       {editingUser && (
