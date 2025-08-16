@@ -25,7 +25,7 @@ export default function Login({ setCurrentUser }) {
 
       const data = await res.json();
       const token = data.token; // { "token": "..." } 形式を想定
-      localStorage.setItem("accessToken", token); // UsersList と名前統一
+      localStorage.setItem("jwt", token); // UsersList.jsx　と App.jsx と名前統一
 
       const decoded = jwtDecode(token);
       const role = decoded.role || "ROLE_USER";
@@ -36,6 +36,7 @@ export default function Login({ setCurrentUser }) {
       });
 
       // ログイン成功後にユーザー一覧へ遷移
+      // navigate("/dashboard", { state: { role } });
       navigate("/dashboard", { state: { role } });
     } catch (err) {
       console.error(err);
