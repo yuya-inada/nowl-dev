@@ -19,21 +19,22 @@ export default function UserDashboard() {
     weeklyAdvice: "今週はテクノロジーセクターに注目。"
   };
 
-  // const UserDashboard = () => {
     return (
-      <div>
+      <div className="px-4">
         <h1>Welcome, User!</h1>
         <p>Here is your personal dashboard.</p>
-
+        <hr />
 
         {/* ユーザー向けのコンポーネントやデータ表示 */}
         <div className="bg-[#1C1C1C] min-h-screen p-4">
           <TopNav />
-          <CompositeChart />
-          <GlobalIndices />
-          <SentimentMeter />
-          <EconomicCalendar calendarView={calendarView} setCalendarView={setCalendarView} />
-          <NowlNews nowlAdvice={nowlAdvice} />
+          <div className="w-full max-w-[1600px] mx-auto border-8 border-green-500 bg-yellow-200">
+            <CompositeChart />
+            <GlobalIndices />
+            <SentimentMeter />
+            <EconomicCalendar calendarView={calendarView} setCalendarView={setCalendarView} />
+            <NowlNews nowlAdvice={nowlAdvice} />
+          </div>
           <BottomNav />
         </div>
       </div>
