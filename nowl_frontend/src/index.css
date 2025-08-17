@@ -39,19 +39,12 @@
   /* =======================================
      ボディ全体のスタイル
      ======================================= */
-  body {
-    margin: 20px 0 20px 0;
-    min-width: 320px;
-    min-height: 100vh;
-    background-color: var(--background-color); /* 変数で背景色 */
-    color: var(--text-color);                  /* 変数で文字色 */
-
-    /* ここから中央揃え設定 */
-    /* display: flex;             /* Flexbox有効 */
-    flex-direction: column;    /* 縦方向に並べる */
-    justify-content: center;   /* 縦方向中央揃え */
-    align-items: center;       /* 横方向中央揃え */
-    text-align: center;        /*テキストも中央寄せ */
+     body {
+      margin: 0; /* ← 余白もまずリセット */
+      min-width: 320px;
+      min-height: 100vh;
+      background-color: var(--background-color);
+      color: var(--text-color);
     }
   
   /* =======================================

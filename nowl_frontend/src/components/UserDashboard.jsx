@@ -20,15 +20,15 @@ export default function UserDashboard() {
   };
 
     return (
-      <div className="px-4">
+      <div>
         <h1>Welcome, User!</h1>
         <p>Here is your personal dashboard.</p>
         <hr />
 
         {/* ユーザー向けのコンポーネントやデータ表示 */}
-        <div className="bg-[#1C1C1C] min-h-screen p-4">
+        <div className="w-full bg-[#1C1C1C] min-h-screen p-4">
           <TopNav />
-          <div className="w-full max-w-[1600px] mx-auto border-8 border-green-500 bg-yellow-200">
+          <div className="w-[90%]">
             <CompositeChart />
             <GlobalIndices />
             <SentimentMeter />
