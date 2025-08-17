@@ -53,6 +53,19 @@ export default function App() {
     setCurrentUser(null);
   };
 
+  // APIエラーやJWT期限切れなど共通の処理
+  const handleApiError = (error, customMessage) => {
+    console.error(error);
+
+    if (error.message === "TOKEN_EXPIRED") {
+      alert("ログイン期限が切れました。再度ログインしてください。");
+      localStorage.removeItem("jwt");
+      setCurrentUser(null);
+    } else {
+      alert(customMessage || "サーバーエラーが発生しました");
+    }
+  };
+
   return (
     <Router>
       <nav style={{ marginBottom: "20px" }}>
@@ -85,7 +98,7 @@ export default function App() {
         <Route
           path="/users"
           element={
-            currentUser ? <UsersList currentUser={currentUser} /> : <Navigate to="/login" />
+            currentUser ? <UsersList currentUser={currentUser} handleApiError={handleApiError}/> : <Navigate to="/login" />
           }
         />
 
