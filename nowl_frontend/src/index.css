@@ -40,11 +40,17 @@
      ボディ全体のスタイル
      ======================================= */
      body {
-      margin: 0; /* ← 余白もまずリセット */
+      margin: 50px 0 20px 0; /* ← 余白もまずリセット */
       min-width: 320px;
       min-height: 100vh;
       background-color: var(--background-color);
       color: var(--text-color);
+
+      /* display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center; */
+
     }
   
   /* =======================================

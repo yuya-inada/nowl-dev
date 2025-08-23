@@ -98,8 +98,8 @@ export default function UsersList({ currentUser, handleApiError }) {
   };
 
   return (
-    <div>
-      <h2>ユーザー一覧</h2>
+    <div className="flex flex-col items-center">
+    <h2 className="mb-5 text-xl font-bold">ユーザー一覧</h2>
 
       {(currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN") && (
         <div style={{ marginBottom: "20px", border: "1px solid #ccc", padding: "10px" }}>
@@ -128,11 +128,16 @@ export default function UsersList({ currentUser, handleApiError }) {
       )}
 
       <table border="1" cellPadding="5" cellSpacing="0">
-        <thead>
-          <tr>
-            <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Created At</th><th>操作</th>
-          </tr>
-        </thead>
+      <thead className="bg-gray-200">
+        <tr>
+          <th className="p-2">ID</th>
+          <th className="p-2">Username</th>
+          <th className="p-2">Email</th>
+          <th className="p-2">Role</th>
+          <th className="p-2">Created At</th>
+          <th className="p-2">操作</th>
+        </tr>
+      </thead>
         <tbody>
           {users.map(user => (
             <tr key={user.id}>
