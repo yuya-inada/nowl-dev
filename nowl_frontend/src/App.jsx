@@ -68,15 +68,17 @@ export default function App() {
 
   return (
     <Router>
-      <nav style={{ marginBottom: "20px" }}>
-        <Link to="/" style={{ marginRight: "10px" }}>ホーム（フロント＆バック連携確認）　| </Link>
-        <Link to="/dashboard" style={{ marginRight: "10px" }}>本番用ホーム画面　| </Link>
-        <Link to="/users" style={{ marginRight: "10px" }}>ユーザー一覧　| </Link>
-        {!currentUser && <Link to="/login">ログイン</Link>}
-      </nav>
+      <div className="text-center">
+        <nav style={{ marginBottom: "20px" }}>
+          <Link to="/" style={{ marginRight: "10px" }}>ホーム（フロント＆バック連携確認）　| </Link>
+          <Link to="/dashboard" style={{ marginRight: "10px" }}>本番用ホーム画面　| </Link>
+          <Link to="/users" style={{ marginRight: "10px" }}>ユーザー一覧　| </Link>
+          {!currentUser && <Link to="/login">ログイン</Link>}
+        </nav>
+      
 
       {currentUser && (
-        <div style={{ marginBottom: "20px" }}>
+        <div className="text-center" style={{ marginBottom: "20px" }}>
           ログイン中ユーザー: {currentUser.username} ({currentUser.role})
           <button onClick={handleLogout} style={{ marginLeft: "10px" }}>ログアウト</button>
         </div>
@@ -119,6 +121,7 @@ export default function App() {
         {/* それ以外はホームにリダイレクト */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+    </div>
     </Router>
   );
 }
