@@ -4,6 +4,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/users")
@@ -15,7 +17,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    // ユーザー作成
+    // ───────────── ユーザー作成 ─────────────
     @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     @PostMapping
     public User createUser(@RequestBody User request, Authentication authentication) {
@@ -26,7 +28,7 @@ public class UserController {
         String role;
         if ("ROLE_SUPERADMIN".equals(requestedRole)) {
             if (!"ROLE_SUPERADMIN".equals(currentRole)) {
-                throw new RuntimeException("Only SUPERADMIN can create another SUPERADMIN");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only SUPERADMIN can create another SUPERADMIN");
             }
             role = "ROLE_SUPERADMIN";
         } else if ("ROLE_ADMIN".equals(requestedRole)) {
@@ -35,33 +37,51 @@ public class UserController {
             role = "ROLE_USER";
         }
 
-        return userService.createUser(
-                request.getUsername(),
-                request.getEmail(),
-                request.getPassword(),
-                role
-        );
+        // 重複チェック
+        if (userService.findByUsername(request.getUsername()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ユーザー名は既に使われています");
+        }
+        if (userService.findByEmail(request.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "メールアドレスは既に使われています");
+        }
+
+        try {
+            return userService.createUser(
+                    request.getUsername(),
+                    request.getEmail(),
+                    request.getPassword(),
+                    role
+            );
+        } catch (RuntimeException e) {
+            // ログに出力
+            System.out.println("[UserController.createUser] Exception: " + e.getMessage());
+            // フロントに 500 として返す
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
     }
 
-    public record UserResponse(Long id, String username, String email, String role, java.time.LocalDateTime createdAt) {}
+    public record UserResponse(
+            Long id,
+            String username,
+            String email,
+            String role,
+            java.time.LocalDateTime createdAt) {}
 
     // 全ユーザー取得
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('USER')")
     @GetMapping
     public List<User> getAllUsers(Authentication authentication) {
         UserDetailsImpl currentUser = (UserDetailsImpl) authentication.getPrincipal();
-        System.out.println("Current user: " + currentUser.getUsername() + " / Authorities: " + currentUser.getAuthorities());
-    
         boolean isSuperAdmin = currentUser.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_SUPERADMIN".equals(a.getAuthority()));
         boolean isAdmin = currentUser.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-    
+
         if (!isSuperAdmin && !isAdmin) {
             return List.of(userService.getUserById(currentUser.getId())
-                    .orElseThrow(() -> new RuntimeException("User not found")));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")));
         }
-    
+
         return userService.getAllUsers();
     }
 
@@ -73,11 +93,11 @@ public class UserController {
         String currentRole = currentUser.getAuthorities().iterator().next().getAuthority();
 
         if ("ROLE_USER".equals(currentRole) && !currentUser.getId().equals(id)) {
-            throw new RuntimeException("USER can only view themselves");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "USER can only view themselves");
         }
 
         User targetUser = userService.getUserById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         return new UserResponse(
                 targetUser.getId(),
@@ -96,28 +116,38 @@ public class UserController {
         String currentRole = currentUser.getAuthorities().iterator().next().getAuthority();
 
         if ("ROLE_USER".equals(currentRole) && !currentUser.getId().equals(id)) {
-            throw new RuntimeException("USER can only edit themselves");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "USER can only edit themselves");
         }
 
         if ("ROLE_ADMIN".equals(currentRole) && !currentUser.getId().equals(id)) {
-            // ADMIN は他ユーザーを編集不可（SUPERADMIN を除く）
             User target = userService.getUserById(id)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
             if ("ROLE_SUPERADMIN".equals(target.getRole())) {
-                throw new RuntimeException("ADMIN cannot edit SUPERADMIN");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ADMIN cannot edit SUPERADMIN");
             } else {
-                throw new RuntimeException("ADMIN can only edit themselves");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ADMIN can only edit themselves");
             }
         }
 
-        // SUPERADMIN は全員編集可能
+        userService.findByUsername(request.getUsername())
+            .filter(u -> !u.getId().equals(id))
+            .ifPresent(u -> { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ユーザー名は既に使われています"); });
 
-        return userService.updateUser(
-                id,
-                request.getUsername(),
-                request.getEmail(),
-                request.getPassword()
-        );
+        userService.findByEmail(request.getEmail())
+                .filter(u -> !u.getId().equals(id))
+                .ifPresent(u -> { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "メールアドレスは既に使われています"); });
+
+        try {
+            return userService.updateUser(
+                    id,
+                    request.getUsername(),
+                    request.getEmail(),
+                    request.getPassword()
+            );
+        } catch (RuntimeException e) {
+            System.out.println("[UserController.updateUser] Exception: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
     }
 
     // 削除
