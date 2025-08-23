@@ -40,7 +40,7 @@ export default function UsersList({ currentUser, handleApiError }) {
     fetchUsers();
   }, []);
 
-  // 新規作成
+  // ───────────── 新規作成 ─────────────
   const createUser = async () => {
     try {
       const res = await apiFetch(
@@ -53,6 +53,22 @@ export default function UsersList({ currentUser, handleApiError }) {
         null,
         navigate
       );
+
+      if (!res.ok) {
+        const errorMsg = await res.text(); // サーバーからの文字列メッセージ取得
+        // 優先順：username → email → password
+        if (errorMsg.includes("ユーザー名")) {
+          alert("ユーザー名は既に使われています");
+        } else if (errorMsg.includes("メールアドレス")) {
+          alert("メールアドレスは既に使われています");
+        } else if (errorMsg.includes("パスワード")) {
+          alert("過去と同じパスワードは使用できません");
+        } else {
+          alert("ユーザー作成で不明なエラーが発生しました");
+        }
+        return;
+      }
+
       const user = await res.json();
       setUsers([...users, user]);
       setNewUsername("");
@@ -65,25 +81,46 @@ export default function UsersList({ currentUser, handleApiError }) {
   };
 
   // 編集保存
-  const submitEdit = async () => {
-    try {
-      const res = await apiFetch(
-        `http://localhost:8080/users/${editingUser.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: editUsername, email: editEmail, ...(editPassword ? { password: editPassword } : {}) })
-        },
-        null,
-        navigate
-      );
-      const updatedUser = await res.json();
-      setUsers(users.map(u => (u.id === updatedUser.id ? updatedUser : u)));
-      setEditingUser(null);
-    } catch (e) {
-      handleApiError?.(e, "ユーザー編集に失敗しました");
+const submitEdit = async () => {
+  try {
+    const res = await apiFetch(
+      `http://localhost:8080/users/${editingUser.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          username: editUsername, 
+          email: editEmail, 
+          ...(editPassword ? { password: editPassword } : {}) 
+        })
+      },
+      null,
+      navigate
+    );
+
+    if (!res.ok) {
+      const errorText = await res.text();
+
+      // 優先度順にチェック
+      if (errorText.includes("ユーザー名")) {
+        alert("ユーザー名は既に使われています");
+      } else if (errorText.includes("メールアドレス")) {
+        alert("メールアドレスは既に使われています");
+      } else if (errorText.includes("パスワード")) {
+        alert("過去と同じパスワードは使用できません");
+      } else {
+        alert("ユーザー編集中にエラーが発生しました");
+      }
+      return;
     }
-  };
+
+    const updatedUser = await res.json();
+    setUsers(users.map(u => (u.id === updatedUser.id ? updatedUser : u)));
+    setEditingUser(null);
+  } catch (e) {
+    handleApiError?.(e, "ユーザー編集に失敗しました");
+  }
+};
 
   // ユーザー削除
   const deleteUser = async (id) => {
@@ -194,23 +231,28 @@ export default function UsersList({ currentUser, handleApiError }) {
           </tr>
         </thead>
         <tbody>
-          {users.map(user => (
-            <tr key={user.id}>
-              <td className="border border-gray-400 p-2">{user.id}</td>
-              <td className="border border-gray-400 p-2">{user.username}</td>
-              <td className="border border-gray-400 p-2">{user.email}</td>
-              <td className="border border-gray-400 p-2">{user.role}</td>
-              <td className="border border-gray-400 p-2">{new Date(user.createdAt).toLocaleString()}</td>
-              <td className="border border-gray-400 p-2">
-                {(currentUser.role === "ROLE_SUPERADMIN" || currentUser.id === user.id) && (
-                  <button className="mr-1 p-1 border rounded" onClick={() => startEditing(user)}>編集</button>
-                )}
-                {currentUser.role === "ROLE_SUPERADMIN" && (
-                  <button className="p-1 border rounded" onClick={() => deleteUser(user.id)}>削除</button>
-                )}
-              </td>
-            </tr>
-          ))}
+          {users.map(user => {
+            console.log('createdAt raw:', user.createdAt);
+            return (
+              <tr key={user.id}>
+                <td className="border border-gray-400 p-2">{user.id}</td>
+                <td className="border border-gray-400 p-2">{user.username}</td>
+                <td className="border border-gray-400 p-2">{user.email}</td>
+                <td className="border border-gray-400 p-2">{user.role}</td>
+                <td className="border border-gray-400 p-2">
+                  {user.createdAt ? new Date(user.createdAt).toLocaleString() : '---'}
+                </td>
+                <td className="border border-gray-400 p-2">
+                  {(currentUser.role === "ROLE_SUPERADMIN" || currentUser.id === user.id) && (
+                    <button className="mr-1 p-1 border rounded" onClick={() => startEditing(user)}>編集</button>
+                  )}
+                  {currentUser.role === "ROLE_SUPERADMIN" && (
+                    <button className="p-1 border rounded" onClick={() => deleteUser(user.id)}>削除</button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

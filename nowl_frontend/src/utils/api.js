@@ -10,7 +10,6 @@ export async function apiFetch(url, options = {}, setCurrentUser, navigate) {
     },
   });
 
-  // JWTが無効 or 期限切れの場合
   if (res.status === 401) {
     console.warn("Unauthorized - Token expired or invalid");
     localStorage.removeItem("jwt");
@@ -19,5 +18,11 @@ export async function apiFetch(url, options = {}, setCurrentUser, navigate) {
     throw new Error("Unauthorized - Token expired or invalid");
   }
 
-  return res;
+  // エラー時も中身は消費せず返す
+  if (!res.ok) {
+    // エラー内容はフロント側で読む
+    console.error("API error:", res.status, res.statusText);
+  }
+
+  return res; // Response をそのまま返す
 }
