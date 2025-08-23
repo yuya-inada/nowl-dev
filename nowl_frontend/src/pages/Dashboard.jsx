@@ -8,7 +8,7 @@ const Dashboard = ({ currentUser}) => {
   }
 
   return (
-    <div>
+    <div className="font-crimson">
       {currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN" ? (
         <AdminDashboard />
       ) : (

@@ -14,49 +14,39 @@ export default function App() {
     fetch('http://localhost:8080/')
       .then(res => res.json())
       .then(data => setMessage(data.message))
-      .catch((e) => {
-        console.error(e);
-        setMessage('API取得エラー');
-      });
+      .catch(() => setMessage('API取得エラー'));
   }, []);
 
-  // ページロード時に JWT を確認して currentUser を設定
+  // JWT確認
   useEffect(() => {
     const token = localStorage.getItem("jwt");
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        // 有効期限チェック  （exp は秒単位なので　＊1000）
         if(decoded.exp * 1000 < Date.now()){
-          console.warn("Token expired");
           localStorage.removeItem("jwt");
           setCurrentUser(null);
           return;
         }
-        const role = decoded.role || "ROLE_USER";
         setCurrentUser({
           id: decoded.id || null,
           username: decoded.sub || "unknown",
-          role: role,
+          role: decoded.role || "ROLE_USER",
         });
-      } catch (e) {
-        console.error("Invalid token");
+      } catch {
         localStorage.removeItem("jwt");
         setCurrentUser(null);
       }
     }
   }, []);
 
-  // ログアウト
   const handleLogout = () => {
     localStorage.removeItem("jwt");
     setCurrentUser(null);
   };
 
-  // APIエラーやJWT期限切れなど共通の処理
   const handleApiError = (error, customMessage) => {
     console.error(error);
-
     if (error.message === "TOKEN_EXPIRED") {
       alert("ログイン期限が切れました。再度ログインしてください。");
       localStorage.removeItem("jwt");
@@ -68,60 +58,66 @@ export default function App() {
 
   return (
     <Router>
-      <div className="text-center">
-        <nav style={{ marginBottom: "20px" }}>
-          <Link to="/" style={{ marginRight: "10px" }}>ホーム（フロント＆バック連携確認）　| </Link>
-          <Link to="/dashboard" style={{ marginRight: "10px" }}>本番用ホーム画面　| </Link>
-          <Link to="/users" style={{ marginRight: "10px" }}>ユーザー一覧　| </Link>
-          {!currentUser && <Link to="/login">ログイン</Link>}
-        </nav>
-      
-
-      {currentUser && (
-        <div className="text-center" style={{ marginBottom: "20px" }}>
-          ログイン中ユーザー: {currentUser.username} ({currentUser.role})
-          <button onClick={handleLogout} style={{ marginLeft: "10px" }}>ログアウト</button>
-        </div>
-      )}
-
-      <Routes>
-        {/* ホーム */}
-        <Route
-          path="/"
-          element={
-            <div>
-              <h1>Nowl Frontend</h1>
-              <p>APIからのメッセージ: {message}</p>
+      <div className="text-center mt-32 font-crimson px-4">
+        <div className="inline-block border p-4 rounded">
+          {/* ナビゲーション */}
+          <nav className="mb-6">
+            <Link to="/" className="mr-4 text-white underline">ホーム (フロント＆バック連携確認)</Link>
+            <Link to="/dashboard" className="mr-4 text-white underline">本番用ホーム画面</Link>
+            <Link to="/users" className="mr-4 text-white underline">ユーザー一覧</Link>
+            {!currentUser && <Link to="/login" className="text-white underline">ログイン</Link>}
+          </nav>
+          {/* ログイン中ユーザー表示 */}
+          {currentUser && (
+            <div className="mb-6 flex flex-col sm:flex-row justify-center items-center gap-2">
+              <span>ログイン中ユーザー: <strong>{currentUser.username}</strong> ({currentUser.role})</span>
+              <button
+                onClick={handleLogout}
+                className="ml-0 sm:ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+              >
+                ログアウト
+              </button>
             </div>
-          }
-        />
+          )}
+        </div>
 
-        {/* ユーザー一覧 (ログイン必須) */}
-        <Route
-          path="/users"
-          element={
-            currentUser ? <UsersList currentUser={currentUser} handleApiError={handleApiError}/> : <Navigate to="/login" />
-          }
-        />
+        {/* ルーティング */}
+        <Routes>
+          {/* ホーム */}
+          <Route
+            path="/"
+            element={
+              <div className="p-4 mt-4 text-[#D4B08C] border rounded max-w-2xl mx-auto shadow font-crimson">
+                <h1 className="text-5xl mb-3">Nowl Frontend</h1>
+                <p className="text-2xl">API (Backend) からのメッセージ: {message}</p>
+              </div>
+            }
+          />
 
-        {/* ログイン画面 */}
-        <Route
-          path="/login"
-          element={<Login setCurrentUser={setCurrentUser} />}
-        />
+          {/* ユーザー一覧 (ログイン必須) */}
+          <Route
+            path="/users"
+            element={
+              currentUser ? <UsersList currentUser={currentUser} handleApiError={handleApiError}/> : <Navigate to="/login" />
+            }
+          />
 
-        {/* ログイン後の遷移先：ホーム画面 */}
-        <Route
-          path="/dashboard"
-          element={
-            currentUser ? <Dashboard currentUser={currentUser} /> : <Navigate to="/login" />
-          }
-        />
+          {/* ログイン画面 */}
+          <Route
+            path="/login"
+            element={<Login setCurrentUser={setCurrentUser} />}
+          />
 
-        {/* それ以外はホームにリダイレクト */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </div>
+          {/* ダッシュボード */}
+          <Route
+            path="/dashboard"
+            element={currentUser ? <Dashboard currentUser={currentUser} /> : <Navigate to="/login" />}
+          />
+
+          {/* その他はホームにリダイレクト */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
     </Router>
   );
 }

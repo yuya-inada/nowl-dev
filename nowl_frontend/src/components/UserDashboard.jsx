@@ -11,7 +11,6 @@ import TokyoStockInvestor from "./TokyoStockInvestor";
 export default function UserDashboard() {
   const [calendarView, setCalendarView] = useState("TODAY");
 
-  // サンプルデータ
   const nowlAdvice = {
     opportunities: [
       { impact: "HIGH", time: "09:00", title: "日経225買いシグナル", suggestion: "短期で買い検討" },
@@ -31,30 +30,28 @@ export default function UserDashboard() {
   ];
 
   return (
-    <div className="text-center">
-      <h1>Welcome, User!</h1>
-      <p>Here is your personal dashboard.</p>
-      <hr />
-  
-      {/* ユーザー向けのコンポーネントやデータ表示 */}
-      <div className=" flex flex-col items-center">
-        
-        {/* 横幅をPCでちょうどよく中央寄せ */}
-        <div className="w-full max-w-2xl mx-auto border-8 border-green-500 bg-yellow-200 px-4 sm:px-6 lg:px-8 box-border">
-          <TopNav />
+    <div className="min-h-screen bg-[#1C1C1C] text-[#D4B08C] font-hiragino-mincho">
+      {/* ヘッダー */}
+      <TopNav />
+
+      {/* 本体コンテンツ：ヘッダー分のパディングを確保 */}
+      <div className="pt-[10px] w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-2xl font-bold mb-4">Welcome, User!</h1>
+        <p className="mb-6">Here is your personal dashboard.</p>
+
+        {/* ダッシュボード主要コンテンツ */}
+        <div className="space-y-6">
           <CompositeChart />
           <GlobalIndices />
-          <TokyoStockInvestor
-            tokyoStockData={tokyoStockData}
-            investorTypeData={investorTypeData}
-          />
+          <TokyoStockInvestor tokyoStockData={tokyoStockData} investorTypeData={investorTypeData} />
           <SentimentMeter />
           <EconomicCalendar calendarView={calendarView} setCalendarView={setCalendarView} />
           <NowlNews nowlAdvice={nowlAdvice} />
-          <BottomNav />
         </div>
-        
+
+        {/* フッター */}
+        <BottomNav />
       </div>
     </div>
   );
-  };
+}

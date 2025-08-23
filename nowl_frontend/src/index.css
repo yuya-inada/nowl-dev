@@ -6,124 +6,46 @@
 /* =======================================
    基本設定（全モード共通）
    ======================================= */
-   :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-  
-    /* 色の基準（変数として設定） */
-    --text-color: #212121;       /* 初期文字色（ライトモード想定） */
-    --background-color: #f9f9f9; /* 初期背景色（ライトモード想定） */
-  
-    color-scheme: light dark;
-  
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* =======================================
-     リンクのスタイル
-     ======================================= */
-  a {
-    font-weight: 500;
-    color: #0c14b1; /* リンク文字色 */
-    text-decoration: inherit;
-  }
-  
-  a:hover {
-    color: #535bf2; /* ホバー時リンク色 */
-  }
-  
-  /* =======================================
-     ボディ全体のスタイル
-     ======================================= */
-     body {
-      margin: 50px 0 20px 0; /* ← 余白もまずリセット */
-      min-width: 320px;
-      min-height: 100vh;
-      background-color: var(--background-color);
-      color: var(--text-color);
+:root {
+  /* カラー変数 */
+  --text-color: #212121;
+  --background-color: #f9f9f9;
 
-      /* display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center; */
+  color-scheme: light dark;
 
-    }
-  
-  /* =======================================
-     タイトル・本文の基本設定
-     ======================================= */
-  h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =======================================
+   リセット系（必要最低限）
+   ======================================= */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+/* リンク */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* =======================================
+   ダークモード対応（必要に応じて）
+   ======================================= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #f5f5f5;
+    --background-color: #1C1C1C;
   }
-  
-  p {
-    color: inherit; /* 親要素から文字色を引き継ぐ */
-  }
-  
-  /* =======================================
-     ボタンのスタイル
-     ======================================= */
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #e0e0e0; /* ライトモード想定 */
-    color: #212121;
-    cursor: pointer;
-    transition: border-color 0.25s;
-  }
-  
-  button:hover {
-    border-color: #787cb9;
-  }
-  
-  button:focus,
-  button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
-  
-  /* =======================================
-     ダークモード対応
-     ======================================= */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --text-color: #212121;       /* ダークモード文字色 */
-      --background-color: #f9f9f9; /* ダークモード背景色 */
-    }
-  
-    a:hover {
-      color: #1c1e92; /* ダークモード時のリンクホバー色 */
-    }
-  
-    button {
-      background-color: #1a1a1a;
-      color: #f5f5f5;
-    }
-  }
-  
-  /* =======================================
-     ライトモード対応（必要に応じて上書き）
-     ======================================= */
-  @media (prefers-color-scheme: light) {
-    :root {
-      --text-color: #212121;       /* ライトモード文字色 */
-      --background-color: #f9f9f9; /* ライトモード背景色 */
-    }
-  
-    a:hover {
-      color: #535bf2; /* ライトモード時のリンクホバー色 */
-    }
-  
-    button {
-      background-color: #e0e0e0;
-      color: #212121;
-    }
-  }
+}
