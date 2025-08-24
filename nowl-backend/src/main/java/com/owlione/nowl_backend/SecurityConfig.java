@@ -37,6 +37,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/").permitAll()  // health check
                 .requestMatchers("/auth/**").permitAll()           // login/signup
+                .requestMatchers("/market-indices/**").permitAll() // マーケット取得
+                .requestMatchers("/market-index**").permitAll()
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
                 .anyRequest().authenticated()                      // その他は認証必須
             )

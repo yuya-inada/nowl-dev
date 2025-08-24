@@ -36,9 +36,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
+        System.out.println("[JwtFilter] path: " + path);
 
         // 認証不要のパスをスキップ
-        if (path.equals("/") || path.startsWith("/auth")) {
+        if (path.equals("/") 
+            || path.startsWith("/auth") 
+            || path.startsWith("/market-indices") 
+            || path.startsWith("/market-index")) { // ← startsWith に変更
             filterChain.doFilter(request, response);
             return;
         }
