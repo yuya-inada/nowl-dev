@@ -1,6 +1,6 @@
 package com.owlione.nowl_backend.controller;
 
-import com.owlione.nowl_backend.MarketIndexCandle;
+import com.owlione.nowl_backend.entity.MarketIndexCandle;
 import com.owlione.nowl_backend.service.MarketIndexCandleService;
 import org.springframework.web.bind.annotation.*;
 

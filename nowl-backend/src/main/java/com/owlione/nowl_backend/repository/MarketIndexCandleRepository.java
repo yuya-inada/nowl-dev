@@ -1,6 +1,6 @@
 package com.owlione.nowl_backend.repository;
 
-import com.owlione.nowl_backend.MarketIndexCandle;
+import com.owlione.nowl_backend.entity.MarketIndexCandle;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

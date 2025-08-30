@@ -1,4 +1,4 @@
-package com.owlione.nowl_backend;
+package com.owlione.nowl_backend.entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
