@@ -18,6 +18,7 @@ public class MarketIndexCandleService {
 
     // 保存
     public MarketIndexCandle saveCandle(MarketIndexCandle candle) {
+        candle.setCreatedAt(LocalDateTime.now());
         return repository.save(candle);
     }
 

@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()           // login/signup
                 .requestMatchers("/market-indices/**").permitAll() // マーケット取得
                 .requestMatchers("/market-index**").permitAll()
+                .requestMatchers("/market-index-candles/**").permitAll()
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
                 .anyRequest().authenticated()                      // その他は認証必須
             )
