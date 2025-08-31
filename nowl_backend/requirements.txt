@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-databases[asyncpg]
-asyncpg
-alembic
-sqlalchemy
