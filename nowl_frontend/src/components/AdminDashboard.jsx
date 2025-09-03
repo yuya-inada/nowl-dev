@@ -35,7 +35,7 @@ export default function AdminDashboard() {
       <TopNav />
 
       {/* 本体コンテンツ: ヘッダー分のスペースを上に確保 */}
-      <div className="pt-[10px] w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="pt-[10px] w-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-4">Welcome, Admin!</h1>
         <p className="mb-6">Here you can manage users and system settings.</p>
 

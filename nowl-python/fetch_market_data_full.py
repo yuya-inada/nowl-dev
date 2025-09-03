@@ -4,7 +4,6 @@ import yfinance as yf
 from datetime import datetime, time, timedelta
 import pytz
 import time as pytime
-import pandas as pd
 import argparse
 
 # --- 設定 ---
@@ -16,12 +15,28 @@ RETRY_LIMIT = 3
 SLEEP_INTERVAL = 60  # 秒単位
 JST = pytz.timezone("Asia/Tokyo")
 
-# 日経225の昼休みは 11:30〜12:30
+# 対象市場リスト（symbol = Yahoo!Financeティッカー, marketType = DB保存用ラベル）
+MARKETS = [
+    {"symbol": "^N225", "marketType": "N225"},
+    {"symbol": "^TOPX", "marketType": "TOPIX"},
+    {"symbol": "JPY=X", "marketType": "USD/JPY"},
+    {"symbol": "EURJPY=X", "marketType": "USD/EUR"},
+    {"symbol": "EURUSD=X", "marketType": "EUR/USD"},
+    {"symbol": "^DJI", "marketType": "NYダウ"},
+    {"symbol": "^GSPC", "marketType": "S&P500"},
+    {"symbol": "^IXIC", "marketType": "NASDAQ"},
+    {"symbol": "BTC-USD", "marketType": "BTC/USD"},
+    # 先物や金利などは後で追加
+]
+
+# 市場の昼休み設定（必要に応じて追加）
 MARKET_BREAKS = {
     "N225": [(time(11, 30), time(12, 30))],
+    "TOPIX": [(time(11, 30), time(12, 30))],
     "CME": [],
     "NYSE": [],
 }
+
 
 # --- データ取得 ---
 def fetch_candles(symbol, start=None, end=None, interval="1m", market_type="N225"):
@@ -69,40 +84,37 @@ def send_candle(payload):
         try:
             response = requests.post(URL_POST, json=payload)
             if response.status_code == 200:
-                print(f"{payload['timestamp']} 送信成功")
+                print(f"[{payload['marketType']}] {payload['timestamp']} 送信成功")
                 return True
             else:
-                print(f"{payload['timestamp']} 送信失敗: {response.status_code} {response.text}")
+                print(f"[{payload['marketType']}] {payload['timestamp']} 送信失敗: {response.status_code} {response.text}")
         except Exception as e:
-            print(f"{payload['timestamp']} 送信エラー: {e}")
+            print(f"[{payload['marketType']}] {payload['timestamp']} 送信エラー: {e}")
         pytime.sleep(1)
     return False
 
 # --- 過去データ取得・送信 ---
-def main(target_date=None):
-    # 対象日
-    if target_date:
-        day = datetime.strptime(target_date, "%Y-%m-%d")
-    else:
-        day = datetime.now(JST)
+def process_market(market, target_date):
+    symbol = market["symbol"]
+    market_type = market["marketType"]
 
-    start_dt = day
-    end_dt = day + timedelta(days=1)
-    data = fetch_candles(SYMBOL, start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d"),
-                         interval="1m", market_type=MARKET_TYPE)
+    start_dt = target_date
+    end_dt = target_date + timedelta(days=1)
+    data = fetch_candles(symbol, start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d"),
+                         interval="1m", market_type=market_type)
 
     if data.empty:
         return
 
-    latest_ts = get_latest_timestamp(SYMBOL, MARKET_TYPE)
+    latest_ts = get_latest_timestamp(symbol, market_type)
 
     for index, row in data.iterrows():
         ts_str = index.strftime("%Y-%m-%dT%H:%M:%S")
         if latest_ts and ts_str <= latest_ts:
             continue
         payload = {
-            "symbol": SYMBOL,
-            "marketType": MARKET_TYPE,
+            "symbol": symbol,
+            "marketType": market_type,
             "timestamp": ts_str,
             "open": float(row['Open']),
             "high": float(row['High']),
@@ -111,6 +123,7 @@ def main(target_date=None):
             "volume": int(row['Volume'])
         }
         send_candle(payload)
+
 
 # --- CLI ---
 if __name__ == "__main__":
@@ -125,9 +138,10 @@ if __name__ == "__main__":
 
     current_day = start_day
     while current_day <= end_day:
-        target_date_str = current_day.strftime("%Y-%m-%d")
-        print(f"取得対象日: {target_date_str}")
-        main(target_date=target_date_str)
+        print(f"=== 取得対象日: {current_day.strftime('%Y-%m-%d')} ===")
+        for market in MARKETS:
+            print(f">>> {market['marketType']} データ取得中...")
+            process_market(market, current_day)
         current_day += timedelta(days=1)
 
 # ------------------ リアルタイム用ループ -------------------
