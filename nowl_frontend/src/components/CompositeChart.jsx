@@ -122,29 +122,49 @@ export default function CompositeChart() {
   }, [chartPeriod, limit, selectedChartIndices]);
 
   const chartData = {
-    labels:
-      candlesMap[selectedChartIndices[0]]?.map((c) => c.timestamp) ?? [],
-    datasets: selectedChartIndices.map((symbol) => ({
-      label: symbol,
-      data: candlesMap[symbol]?.map((c) => c.close) ?? [],
-      borderColor: colors[symbol] || "#ccc",
-      fill: false,
-      tension: 0.1,
-    })),
+    labels: candlesMap[selectedChartIndices[0]]?.map((c) => c.timestamp) ?? [],
+    datasets: selectedChartIndices.map((symbol) => {
+      const rawData = candlesMap[symbol]?.map((c) => c.close) ?? [];
+      const base = rawData.length > 0 ? rawData[0] : 1;
+      const data = rawData.map((v) => (base !== 0 ? v / base : 0));
+      return {
+        label: symbol,
+        data,
+        borderColor: colors[symbol] || "#ccc",
+        fill: false,
+        tension: 0.1,
+        yAxisID: "y",
+      };
+    }),
   };
-
+  
   const chartOptions = {
+    responsive: true,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
     plugins: {
       legend: {
-        labels: {
-          usePointStyle: true,   // ← 丸にする
-          pointStyle: "rect",  // ← デフォルトは 'circle'、他に 'rect', 'triangle', 'cross' などもOK
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const symbol = context.dataset.label;
+            const index = context.dataIndex;
+            const rawValue = candlesMap[symbol]?.[index]?.close ?? 0; // ← 元の株価
+            return `${symbol}: ${rawValue}`; // 実際の数値を表示
+          },
         },
       },
     },
-    layout: {
-      padding: {
-        bottom: 10,
+    scales: {
+      y: {
+        type: "linear",
+        display: true,
+        position: "left",
+        ticks: { color: "#8A7A6A" },
       },
     },
   };
@@ -192,7 +212,22 @@ export default function CompositeChart() {
         </div>
 
         {/* 線チャート */}
-        <div className="bg-[#1C1C1C] h-80 p-2 border border-[#3A3A3A]">
+        {/* 凡例を外に描画 */}
+        <div className="flex flex-wrap gap-3 px-4 py-2">
+          {selectedChartIndices.map((symbol) => (
+            <div key={symbol} className="flex items-center space-x-2">
+              {/* 丸い色アイコン */}
+              <span
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: colors[symbol] || "#ccc" }}
+              />
+              <span className="text-xs text-[#D4B08C]">{symbol}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 線チャート */}
+        <div className="bg-[#1C1C1C] p-2 border border-[#3A3A3A]">
           {Object.keys(candlesMap).length > 0 ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
