@@ -53,6 +53,17 @@ export default function CompositeChart() {
     "BTC/USD": "BTC-USD",
   };
 
+  const displayNameMapping = {
+    "N225": "日経平均株価",
+    "TOPIX": "TOPIX",
+    "S&P500": "S&P500",
+    "NYダウ": "NYダウ",
+    "NASDAQ": "NASDAQ",
+    "USD/JPY": "ドル/円",
+    "USD/EUR": "ドル/ユーロ",
+    "BTC/USD": "ビットコイン",
+  };
+
   const [selectedChartIndices, setSelectedChartIndices] = useState([
     "N225",
     // "日経先物(Large)",
@@ -167,8 +178,9 @@ export default function CompositeChart() {
           label: (context) => {
             const symbol = context.dataset.label;
             const index = context.dataIndex;
-            const rawValue = candlesMap[symbol]?.[index]?.close ?? 0; // ← 元の株価
-            return `${symbol}: ${rawValue}`; // 実際の数値を表示
+            const rawValue = candlesMap[symbol]?.[index]?.close ?? 0;
+            const displayName = displayNameMapping[symbol] || symbol;
+            return `${displayName}: ${rawValue}`;
           },
         },
       },
@@ -219,7 +231,9 @@ export default function CompositeChart() {
                   onChange={() => handleChartIndexChange(index)}
                   className="w-3 h-3 text-[#8B4513] bg-[#2A2A2A] border-[#4A4A4A] rounded focus:ring-[#8B4513]"
                 />
-                <span className="text-[#D4B08C] whitespace-nowrap">{index}</span>
+                <span className="text-[#D4B08C] text-base whitespace-nowrap">
+                  {displayNameMapping[index] || index}
+                </span>
               </label>
             ))}
           </div>
@@ -235,7 +249,7 @@ export default function CompositeChart() {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: colors[symbol] || "#ccc" }}
               />
-              <span className="text-xs text-[#D4B08C]">{symbol}</span>
+              <span className="text-xs text-[#D4B08C]">{displayNameMapping[symbol] || symbol}</span>
             </div>
           ))}
         </div>
@@ -270,7 +284,7 @@ export default function CompositeChart() {
         <div className="bg-[#1C1C1C] p-2 border-t border-[#3A3A3A] max-h-96 overflow-auto">
           {Object.entries(candlesMap).map(([symbol, candles]) => (
             <div key={symbol} className="mb-6">
-              <h3 className="text-[#D4B08C] text-xs font-bold mb-2">{symbol}</h3>
+              <h3 className="text-[#D4B08C] text-xl font-bold mb-2">{displayNameMapping[symbol] || symbol}</h3>
               {candles.length > 0 ? (
                 <table className="w-full text-sm text-[#8A7A6A]">
                   <thead className="bg-[#2A2A2A] sticky top-0">
