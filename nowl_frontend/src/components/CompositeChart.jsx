@@ -77,13 +77,31 @@ export default function CompositeChart() {
   const [candlesMap, setCandlesMap] = useState({});
 
   const colors = {
-    "日経先物(Large)": "#D4B08C",
-    "日経先物(Mini)": "#8BC34A",
-    "日経先物(CME:USD)": "#03A9F4",
-    "日経先物(CME:Yen)": "#FF5722",
-    N225: "gray",
-    TOPIX: "#FFC107",
-    "S&P500": "#00BFFF",
+    // 国内株式系（オレンジ〜ブラウン系）
+    N225: "#FF8C00",           // 濃いオレンジ
+    TOPIX: "#FFA500",          // 明るいオレンジ
+    "日経先物(Large)": "#D2691E", // チョコレート寄り
+    "日経先物(Mini)": "#CD853F",  // サンドブラウン
+    "日経先物(CME:USD)": "#FFB347", // ライトオレンジ
+    "日経先物(CME:Yen)": "#FF7F50", // コーラル寄り
+  
+    // 米国株式系（ブルー系）
+    "NYダウ": "#1E90FF",      // ドッジャーブルー
+    "S&P500": "#00BFFF",       // ディープスカイブルー
+    "NASDAQ": "#87CEFA",       // ライトスカイブルー
+  
+    // 為替（グリーン系）
+    "USD/JPY": "#228B22",      // フォレストグリーン
+    "USD/EUR": "#32CD32",      // ライムグリーン
+  
+    // 暗号資産（ゴールド系）
+    "BTC/USD": "#FFD700",      // ゴールド
+  
+    // 金利・指標（赤〜ピンク系）
+    "日長期金利": "#FF4500",        // オレンジレッド
+    "米長期金利": "#FF6347",        // トマト
+    "10年期待インフレ率": "#FF1493", // ディープピンク
+    "実質金利": "#FF69B4",         // ホットピンク
   };
 
   const handleChartIndexChange = (index) => {
@@ -146,54 +164,78 @@ export default function CompositeChart() {
     });
   }, [chartPeriod, limit, selectedChartIndices]);
 
-  const chartData = {
-    labels: candlesMap[selectedChartIndices[0]]?.map((c) => c.timestamp) ?? [],
-    datasets: selectedChartIndices.map((symbol) => {
-      const rawData = candlesMap[symbol]?.map((c) => c.close) ?? [];
-      const base = rawData.length > 0 ? rawData[0] : 1;
-      const data = rawData.map((v) => (base !== 0 ? v / base : 0));
-      return {
-        label: symbol,
-        data,
-        borderColor: colors[symbol] || "#ccc",
-        fill: false,
-        tension: 0.1,
-        yAxisID: "y",
-      };
-    }),
-  };
-  
-  const chartOptions = {
-    responsive: true,
-    interaction: {
-      mode: "index",
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const symbol = context.dataset.label;
-            const index = context.dataIndex;
-            const rawValue = candlesMap[symbol]?.[index]?.close ?? 0;
-            const displayName = displayNameMapping[symbol] || symbol;
-            return `${displayName}: ${rawValue}`;
-          },
+  // 例: 上部チャート部分のみ
+const lineStyles = {
+  // 国内株式系
+  N225: { color: "#FF8C00", width: 3, dash: [] },
+  TOPIX: { color: "#FFA500", width: 2, dash: [5, 3] },
+  "日経先物(Large)": { color: "#D2691E", width: 2, dash: [] },
+  "日経先物(Mini)": { color: "#CD853F", width: 2, dash: [2, 2] },
+  "日経先物(CME:USD)": { color: "#FFB347", width: 1.5, dash: [1, 2] },
+  "日経先物(CME:Yen)": { color: "#FF7F50", width: 1.5, dash: [3, 3] },
+
+  // 米国株式系
+  "NYダウ": { color: "#1E90FF", width: 3, dash: [] },
+  "S&P500": { color: "#00BFFF", width: 2.5, dash: [5, 3] },
+  "NASDAQ": { color: "#87CEFA", width: 2, dash: [2, 2] },
+
+  // 為替
+  "USD/JPY": { color: "#228B22", width: 2.5, dash: [] },
+  "USD/EUR": { color: "#32CD32", width: 2, dash: [3, 3] },
+
+  // 暗号資産
+  "BTC/USD": { color: "#FFD700", width: 3, dash: [] },
+
+  // 金利・指標
+  "日長期金利": { color: "#FF4500", width: 2, dash: [4, 2] },
+  "米長期金利": { color: "#FF6347", width: 2, dash: [2, 2] },
+  "10年期待インフレ率": { color: "#FF1493", width: 2, dash: [1, 2] },
+  "実質金利": { color: "#FF69B4", width: 2, dash: [5, 5] },
+};
+
+const chartData = {
+  labels: candlesMap[selectedChartIndices[0]]?.map((c) => c.timestamp) ?? [],
+  datasets: selectedChartIndices.map((symbol) => {
+    const rawData = candlesMap[symbol]?.map((c) => c.close) ?? [];
+    const base = rawData.length > 0 ? rawData[0] : 1;
+    const data = rawData.map((v) => (base !== 0 ? v / base : 0));
+
+    const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
+
+    return {
+      label: displayNameMapping[symbol] || symbol,
+      data,
+      borderColor: style.color,
+      borderWidth: style.width,
+      borderDash: style.dash,
+      fill: false,
+      tension: 0.1,
+      yAxisID: "y",
+    };
+  }),
+};
+
+const chartOptions = {
+  responsive: true,
+  interaction: { mode: "index", intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const symbol = selectedChartIndices[context.datasetIndex]; // ←元のシンボル名
+          const index = context.dataIndex;
+          const rawValue = candlesMap[symbol]?.[index]?.close ?? 0;
+          const displayName = displayNameMapping[symbol] || symbol;
+          return `${displayName}: ${rawValue}`;
         },
       },
     },
-    scales: {
-      y: {
-        type: "linear",
-        display: true,
-        position: "left",
-        ticks: { color: "#8A7A6A" },
-      },
-    },
-  };
+  },
+  scales: {
+    y: { type: "linear", display: true, position: "left", ticks: { color: "#8A7A6A" } },
+  },
+};
 
   return (
     <div className="pt-24 p-4 space-y-4">
