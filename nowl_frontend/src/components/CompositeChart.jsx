@@ -31,7 +31,7 @@ export default function CompositeChart() {
     "日経先物(CME:Yen)",
     "USD/JPY",
     "USD/EUR",
-    "EUR/USD",
+    // "EUR/USD",
     "NYダウ",
     "S&P500",
     "NASDAQ",
@@ -42,12 +42,23 @@ export default function CompositeChart() {
     "実質金利",
   ];
 
+  const symbolMapping = {
+    "S&P500": "^GSPC",
+    "NYダウ": "^DJI",
+    "NASDAQ": "^IXIC",
+    "N225": "^N225",
+    "USD/JPY": "JPY=X",
+    "EUR/USD": "EURUSD=X",
+    "USD/EUR": "EURUSD=X",
+    "BTC/USD": "BTC-USD",
+  };
+
   const [selectedChartIndices, setSelectedChartIndices] = useState([
     "N225",
-    "日経先物(Large)",
-    "日経先物(Mini)",
-    "日経先物(CME:USD)",
-    "日経先物(CME:Yen)",
+    // "日経先物(Large)",
+    // "日経先物(Mini)",
+    // "日経先物(CME:USD)",
+    // "日経先物(CME:Yen)",
   ]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
@@ -61,6 +72,7 @@ export default function CompositeChart() {
     "日経先物(CME:Yen)": "#FF5722",
     N225: "gray",
     TOPIX: "#FFC107",
+    "S&P500": "#00BFFF",
   };
 
   const handleChartIndexChange = (index) => {
@@ -100,25 +112,27 @@ export default function CompositeChart() {
     }
 
     Promise.all(
-      selectedChartIndices.map((symbol) =>
-        fetch(
-          `http://localhost:8081/market-index-candles?symbol=${symbol}&from=${fromDate.toISOString()}&limit=${limit}`
-        )
+      selectedChartIndices.map((symbol) => {
+        const apiSymbol = symbolMapping[symbol] || symbol; // ← indexName → symbol
+        return fetch(`http://localhost:8081/market-index-candles?symbol=${apiSymbol}&from=${fromDate.toISOString()}&limit=${limit}`)
           .then((res) => res.json())
-          .then((data) => ({ symbol, data: Array.isArray(data) ? data : [] }))
-      )
-    )
-      .then((results) => {
-        const newMap = {};
-        results.forEach(({ symbol, data }) => {
-          newMap[symbol] = data;
-        });
-        setCandlesMap(newMap);
+          .then((data) => ({
+            symbol: symbol,
+            data: Array.isArray(data) ? data : [],
+          }));
       })
-      .catch((err) => {
-        console.error(err);
-        setCandlesMap({});
+    )
+    .then((results) => {
+      const newMap = {};
+      results.forEach(({ symbol, data }) => {
+        newMap[symbol] = data;
       });
+      setCandlesMap(newMap);
+    })
+    .catch((err) => {
+      console.error(err);
+      setCandlesMap({});
+    });
   }, [chartPeriod, limit, selectedChartIndices]);
 
   const chartData = {
