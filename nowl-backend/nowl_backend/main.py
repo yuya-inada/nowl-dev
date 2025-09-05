@@ -71,7 +71,7 @@ async def get_candles(
             print("from_変換エラー:", from_, e)
             from_dt = None
 
-    query = "SELECT * FROM market_index_candles WHERE market_type = :symbol"
+    query = "SELECT * FROM market_index_candles WHERE symbol = :symbol"
     values = {"symbol": symbol}
 
     if from_dt:
