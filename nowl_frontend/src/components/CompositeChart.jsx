@@ -23,23 +23,10 @@ ChartJS.register(
 
 export default function CompositeChart() {
   const chartIndices = [
-    "N225",
-    "TOPIX",
-    "日経先物(Large)",
-    "日経先物(Mini)",
-    "日経先物(CME:USD)",
-    "日経先物(CME:Yen)",
-    "USD/JPY",
-    "USD/EUR",
-    // "EUR/USD",
-    "NYダウ",
-    "S&P500",
-    "NASDAQ",
-    "BTC/USD",
-    "日長期金利",
-    "米長期金利",
-    "10年期待インフレ率",
-    "実質金利",
+    "N225", "TOPIX", "日経先物(Large)", "日経先物(Mini)",
+    "日経先物(CME:USD)", "日経先物(CME:Yen)", "USD/JPY", "USD/EUR",
+    "NYダウ", "S&P500", "NASDAQ", "BTC/USD",
+    "日長期金利", "米長期金利", "10年期待インフレ率", "実質金利",
   ];
 
   const symbolMapping = {
@@ -64,44 +51,21 @@ export default function CompositeChart() {
     "BTC/USD": "ビットコイン",
   };
 
-  const [selectedChartIndices, setSelectedChartIndices] = useState([
-    "N225",
-    // "日経先物(Large)",
-    // "日経先物(Mini)",
-    // "日経先物(CME:USD)",
-    // "日経先物(CME:Yen)",
-  ]);
+  const [selectedChartIndices, setSelectedChartIndices] = useState(["N225"]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
-  const [limit, setLimit] = useState(100);
+  const timeframes = ["1m","2m","3m","4m","5m","10m","15m","30m","60m","1d","1w","1M"];
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
   const [candlesMap, setCandlesMap] = useState({});
 
   const colors = {
-    // 国内株式系（オレンジ〜ブラウン系）
-    N225: "#FF8C00",           // 濃いオレンジ
-    TOPIX: "#FFA500",          // 明るいオレンジ
-    "日経先物(Large)": "#D2691E", // チョコレート寄り
-    "日経先物(Mini)": "#CD853F",  // サンドブラウン
-    "日経先物(CME:USD)": "#FFB347", // ライトオレンジ
-    "日経先物(CME:Yen)": "#FF7F50", // コーラル寄り
-  
-    // 米国株式系（ブルー系）
-    "NYダウ": "#1E90FF",      // ドッジャーブルー
-    "S&P500": "#00BFFF",       // ディープスカイブルー
-    "NASDAQ": "#87CEFA",       // ライトスカイブルー
-  
-    // 為替（グリーン系）
-    "USD/JPY": "#228B22",      // フォレストグリーン
-    "USD/EUR": "#32CD32",      // ライムグリーン
-  
-    // 暗号資産（ゴールド系）
-    "BTC/USD": "#FFD700",      // ゴールド
-  
-    // 金利・指標（赤〜ピンク系）
-    "日長期金利": "#FF4500",        // オレンジレッド
-    "米長期金利": "#FF6347",        // トマト
-    "10年期待インフレ率": "#FF1493", // ディープピンク
-    "実質金利": "#FF69B4",         // ホットピンク
+    N225: "#FF8C00", TOPIX: "#FFA500",
+    "日経先物(Large)": "#D2691E", "日経先物(Mini)": "#CD853F",
+    "日経先物(CME:USD)": "#FFB347", "日経先物(CME:Yen)": "#FF7F50",
+    "NYダウ": "#1E90FF", "S&P500": "#00BFFF", "NASDAQ": "#87CEFA",
+    "USD/JPY": "#228B22", "USD/EUR": "#32CD32", "BTC/USD": "#FFD700",
+    "日長期金利": "#FF4500", "米長期金利": "#FF6347",
+    "10年期待インフレ率": "#FF1493", "実質金利": "#FF69B4",
   };
 
   const handleChartIndexChange = (index) => {
@@ -121,142 +85,123 @@ export default function CompositeChart() {
     const now = new Date();
     let fromDate;
     switch (chartPeriod) {
-      case "1M":
-        fromDate = new Date(now.setMonth(now.getMonth() - 1));
-        break;
-      case "3M":
-        fromDate = new Date(now.setMonth(now.getMonth() - 3));
-        break;
-      case "6M":
-        fromDate = new Date(now.setMonth(now.getMonth() - 6));
-        break;
-      case "1Y":
-        fromDate = new Date(now.setFullYear(now.getFullYear() - 1));
-        break;
-      case "5Y":
-        fromDate = new Date(now.setFullYear(now.getFullYear() - 5));
-        break;
-      default:
-        fromDate = new Date(0);
+      case "1M": fromDate = new Date(now.setMonth(now.getMonth() - 1)); break;
+      case "3M": fromDate = new Date(now.setMonth(now.getMonth() - 3)); break;
+      case "6M": fromDate = new Date(now.setMonth(now.getMonth() - 6)); break;
+      case "1Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 1)); break;
+      case "5Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 5)); break;
+      default: fromDate = new Date(0);
     }
 
     Promise.all(
       selectedChartIndices.map((symbol) => {
-        const apiSymbol = symbolMapping[symbol] || symbol; // ← indexName → symbol
-        return fetch(`http://localhost:8081/market-index-candles?symbol=${apiSymbol}&from=${fromDate.toISOString()}&limit=${limit}`)
-          .then((res) => res.json())
-          .then((data) => ({
-            symbol: symbol,
-            data: Array.isArray(data) ? data : [],
-          }));
+        const apiSymbol = symbolMapping[symbol] || symbol;
+        const url = `http://localhost:8081/market-index-candles?symbol=${apiSymbol}&from=${fromDate.toISOString()}&interval=${selectedTimeframe}`;
+        return fetch(url)
+          .then(res => res.json())
+          .then(data => ({ symbol, data: Array.isArray(data) ? data : [] }));
       })
-    )
-    .then((results) => {
+    ).then(results => {
       const newMap = {};
-      results.forEach(({ symbol, data }) => {
-        newMap[symbol] = data;
-      });
+      results.forEach(({ symbol, data }) => { newMap[symbol] = data; });
       setCandlesMap(newMap);
-    })
-    .catch((err) => {
-      console.error(err);
-      setCandlesMap({});
-    });
-  }, [chartPeriod, limit, selectedChartIndices]);
+    }).catch(err => { console.error(err); setCandlesMap({}); });
+  }, [chartPeriod, selectedTimeframe, selectedChartIndices]);
 
-  // 例: 上部チャート部分のみ
-const lineStyles = {
-  // 国内株式系
-  N225: { color: "#FF8C00", width: 3, dash: [] },
-  TOPIX: { color: "#FFA500", width: 2, dash: [5, 3] },
-  "日経先物(Large)": { color: "#D2691E", width: 2, dash: [] },
-  "日経先物(Mini)": { color: "#CD853F", width: 2, dash: [2, 2] },
-  "日経先物(CME:USD)": { color: "#FFB347", width: 1.5, dash: [1, 2] },
-  "日経先物(CME:Yen)": { color: "#FF7F50", width: 1.5, dash: [3, 3] },
+  const lineStyles = {
+    N225: { color: "#FF8C00", width: 3, dash: [] },
+    TOPIX: { color: "#FFA500", width: 2, dash: [5,3] },
+    "日経先物(Large)": { color: "#D2691E", width: 2, dash: [] },
+    "日経先物(Mini)": { color: "#CD853F", width: 2, dash: [2,2] },
+    "日経先物(CME:USD)": { color: "#FFB347", width: 1.5, dash: [1,2] },
+    "日経先物(CME:Yen)": { color: "#FF7F50", width: 1.5, dash: [3,3] },
+    "NYダウ": { color: "#1E90FF", width: 3, dash: [] },
+    "S&P500": { color: "#00BFFF", width: 2.5, dash: [5,3] },
+    "NASDAQ": { color: "#87CEFA", width: 2, dash: [2,2] },
+    "USD/JPY": { color: "#228B22", width: 2.5, dash: [] },
+    "USD/EUR": { color: "#32CD32", width: 2, dash: [3,3] },
+    "BTC/USD": { color: "#FFD700", width: 3, dash: [] },
+    "日長期金利": { color: "#FF4500", width: 2, dash: [4,2] },
+    "米長期金利": { color: "#FF6347", width: 2, dash: [2,2] },
+    "10年期待インフレ率": { color: "#FF1493", width: 2, dash: [1,2] },
+    "実質金利": { color: "#FF69B4", width: 2, dash: [5,5] },
+  };
 
-  // 米国株式系
-  "NYダウ": { color: "#1E90FF", width: 3, dash: [] },
-  "S&P500": { color: "#00BFFF", width: 2.5, dash: [5, 3] },
-  "NASDAQ": { color: "#87CEFA", width: 2, dash: [2, 2] },
+  const chartData = {
+    labels: candlesMap[selectedChartIndices[0]]?.map(c => c.timestamp) ?? [],
+    datasets: selectedChartIndices.map(symbol => {
+      const rawData = candlesMap[symbol]?.map(c => c.close) ?? [];
+      const base = rawData[0] ?? 1;
+      const data = rawData.map(v => base !== 0 ? v/base : 0);
+      const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
+      return {
+        label: displayNameMapping[symbol] || symbol,
+        data,
+        borderColor: style.color,
+        borderWidth: style.width,
+        borderDash: style.dash,
+        fill: false,
+        tension: 0.1,
+      };
+    }),
+  };
 
-  // 為替
-  "USD/JPY": { color: "#228B22", width: 2.5, dash: [] },
-  "USD/EUR": { color: "#32CD32", width: 2, dash: [3, 3] },
-
-  // 暗号資産
-  "BTC/USD": { color: "#FFD700", width: 3, dash: [] },
-
-  // 金利・指標
-  "日長期金利": { color: "#FF4500", width: 2, dash: [4, 2] },
-  "米長期金利": { color: "#FF6347", width: 2, dash: [2, 2] },
-  "10年期待インフレ率": { color: "#FF1493", width: 2, dash: [1, 2] },
-  "実質金利": { color: "#FF69B4", width: 2, dash: [5, 5] },
-};
-
-const chartData = {
-  labels: candlesMap[selectedChartIndices[0]]?.map((c) => c.timestamp) ?? [],
-  datasets: selectedChartIndices.map((symbol) => {
-    const rawData = candlesMap[symbol]?.map((c) => c.close) ?? [];
-    const base = rawData.length > 0 ? rawData[0] : 1;
-    const data = rawData.map((v) => (base !== 0 ? v / base : 0));
-
-    const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
-
-    return {
-      label: displayNameMapping[symbol] || symbol,
-      data,
-      borderColor: style.color,
-      borderWidth: style.width,
-      borderDash: style.dash,
-      fill: false,
-      tension: 0.1,
-      yAxisID: "y",
-    };
-  }),
-};
-
-const chartOptions = {
-  responsive: true,
-  interaction: { mode: "index", intersect: false },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const symbol = selectedChartIndices[context.datasetIndex]; // ←元のシンボル名
-          const index = context.dataIndex;
-          const rawValue = candlesMap[symbol]?.[index]?.close ?? 0;
-          const displayName = displayNameMapping[symbol] || symbol;
-          return `${displayName}: ${rawValue}`;
+  const chartOptions = {
+    responsive: true,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const symbol = selectedChartIndices[ctx.datasetIndex];
+            const val = candlesMap[symbol]?.[ctx.dataIndex]?.close ?? 0;
+            return `${displayNameMapping[symbol]||symbol}: ${val}`;
+          },
         },
       },
     },
-  },
-  scales: {
-    y: { type: "linear", display: true, position: "left", ticks: { color: "#8A7A6A" } },
-  },
-};
+    scales: {
+      y: { type: "linear", display: true, position: "left", ticks: { color: "#8A7A6A" } },
+    },
+  };
 
   return (
     <div className="pt-24 p-4 space-y-4">
       <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
         {/* ヘッダー */}
-        <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
-          <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">
-            COMPOSITE CHART ANALYSIS
-          </h2>
-          <div className="flex space-x-1">
-            {periods.map((period) => (
+        <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+          <h2 className="text-xl font-bold text-[#D4B08C] tracking-wide">COMPOSITE CHART ANALYSIS</h2>
+          {/* 期間ボタン */}
+          <div className="flex gap-2 flex-wrap">
+            {periods.map(p => (
               <button
-                key={period}
-                onClick={() => setChartPeriod(period)}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
-                  chartPeriod === period
-                    ? "bg-[#8B4513] text-[#D4B08C] font-semibold"
+                key={p}
+                onClick={() => setChartPeriod(p)}
+                className={`px-3 py-1 rounded font-semibold text-sm transition-colors ${
+                  chartPeriod === p
+                    ? "bg-[#8B4513] text-[#D4B08C]"
                     : "bg-[#4A4A4A] text-[#8A7A6A] hover:bg-[#5A5A5A]"
                 }`}
               >
-                {period}
+                {p}
+              </button>
+            ))}
+          </div>
+
+          {/* 足種ボタン（横スクロール可能） */}
+          <div className="flex gap-2 overflow-x-auto py-1">
+            {timeframes.map(tf => (
+              <button
+                key={tf}
+                onClick={() => setSelectedTimeframe(tf)}
+                className={`px-3 py-1 rounded font-semibold text-sm flex-shrink-0 transition-colors ${
+                  selectedTimeframe === tf
+                    ? "bg-[#1E90FF] text-white"
+                    : "bg-[#4A4A4A] text-[#8A7A6A] hover:bg-[#5A5A5A]"
+                }`}
+              >
+                {tf}
               </button>
             ))}
           </div>
@@ -264,101 +209,29 @@ const chartOptions = {
 
         {/* チェックボックス */}
         <div className="bg-[#3A3A3A] px-4 py-3 border-b border-[#4A4A4A]">
-          <div className="grid grid-cols-6 gap-3">
-            {chartIndices.map((index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            {chartIndices.map(index=>(
               <label key={index} className="flex items-center space-x-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={selectedChartIndices.includes(index)}
-                  onChange={() => handleChartIndexChange(index)}
-                  className="w-3 h-3 text-[#8B4513] bg-[#2A2A2A] border-[#4A4A4A] rounded focus:ring-[#8B4513]"
-                />
-                <span className="text-[#D4B08C] text-base whitespace-nowrap">
-                  {displayNameMapping[index] || index}
-                </span>
+                <input type="checkbox" checked={selectedChartIndices.includes(index)} onChange={()=>handleChartIndexChange(index)} className="w-3 h-3 text-[#8B4513] bg-[#2A2A2A] border-[#4A4A4A] rounded focus:ring-[#8B4513]" />
+                <span className="text-[#D4B08C] text-sm whitespace-nowrap">{displayNameMapping[index]||index}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {/* 線チャート */}
-        {/* 凡例を外に描画 */}
+        {/* 凡例 */}
         <div className="flex flex-wrap gap-3 px-4 py-2">
-          {selectedChartIndices.map((symbol) => (
+          {selectedChartIndices.map(symbol=>(
             <div key={symbol} className="flex items-center space-x-2">
-              {/* 丸い色アイコン */}
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: colors[symbol] || "#ccc" }}
-              />
-              <span className="text-xs text-[#D4B08C]">{displayNameMapping[symbol] || symbol}</span>
+              <span className="w-3 h-3 rounded-full" style={{backgroundColor:colors[symbol]||"#ccc"}}/>
+              <span className="text-xs text-[#D4B08C]">{displayNameMapping[symbol]||symbol}</span>
             </div>
           ))}
         </div>
 
         {/* 線チャート */}
-        <div className="bg-[#1C1C1C] p-2 border border-[#3A3A3A]">
-          {Object.keys(candlesMap).length > 0 ? (
-            <Line data={chartData} options={chartOptions} />
-          ) : (
-            <div className="text-[#8A7A6A] text-center mt-24">
-              データが存在しません
-            </div>
-          )}
-        </div>
-
-        {/* 件数選択 */}
-        <div className="bg-[#3A3A3A] px-4 py-2 border-t border-[#4A4A4A]">
-          <label className="text-[#8A7A6A] mr-2">表示件数:</label>
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="bg-[#1C1C1C] text-[#8A7A6A] border border-gray-700 rounded px-2 py-1 text-xs"
-          >
-            <option value={20}>直近 20 件</option>
-            <option value={50}>直近 50 件</option>
-            <option value={100}>直近 100 件</option>
-            <option value={200}>直近 200 件</option>
-          </select>
-        </div>
-
-        {/* データテーブル（シンボルごとに分ける） */}
-        <div className="bg-[#1C1C1C] p-2 border-t border-[#3A3A3A] max-h-96 overflow-auto">
-          {Object.entries(candlesMap).map(([symbol, candles]) => (
-            <div key={symbol} className="mb-6">
-              <h3 className="text-[#D4B08C] text-xl font-bold mb-2">{displayNameMapping[symbol] || symbol}</h3>
-              {candles.length > 0 ? (
-                <table className="w-full text-sm text-[#8A7A6A]">
-                  <thead className="bg-[#2A2A2A] sticky top-0">
-                    <tr>
-                      <th>Timestamp</th>
-                      <th>Open</th>
-                      <th>High</th>
-                      <th>Low</th>
-                      <th>Close</th>
-                      <th>Volume</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {candles.map((c) => (
-                      <tr key={c.timestamp} className="even:bg-[#1A1A1A]">
-                        <td>{c.timestamp}</td>
-                        <td>{c.open}</td>
-                        <td>{c.high}</td>
-                        <td>{c.low}</td>
-                        <td>{c.close}</td>
-                        <td>{c.volume}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="text-[#8A7A6A] text-center py-4">
-                  データが存在しません
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="bg-[#1C1C1C] p-2 border border-[#3A3A3A] h-[400px] md:h-[500px]">
+          {Object.keys(candlesMap).length>0 ? <Line data={chartData} options={chartOptions}/> : <div className="text-[#8A7A6A] text-center mt-24">データが存在しません</div>}
         </div>
       </div>
     </div>
