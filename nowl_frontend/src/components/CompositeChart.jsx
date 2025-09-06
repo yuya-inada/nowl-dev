@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
-import "chartjs-adapter-date-fns";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  TimeScale,
   PointElement,
   LineElement,
   Title,
@@ -16,7 +14,6 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  TimeScale,
   PointElement,
   LineElement,
   Title,
@@ -53,18 +50,22 @@ export default function CompositeChart() {
     "EUR/USD": "EURUSD=X",
     "USD/EUR": "EURUSD=X",
     "BTC/USD": "BTC-USD",
+    "日経先物(CME:USD)": "CME_NKD_USD",
+    "日経先物(CME:Yen)": "CME_NIY_YEN",
   };
 
   const displayNameMapping = {
-    "N225": "日経平均株価",
-    "TOPIX": "TOPIX",
-    "S&P500": "S&P500",
-    "NYダウ": "NYダウ",
-    "NASDAQ": "NASDAQ",
-    "USD/JPY": "ドル/円",
-    "USD/EUR": "ドル/ユーロ",
-    "BTC/USD": "ビットコイン",
-  };
+  "N225": "日経平均株価",
+  "TOPIX": "TOPIX",
+  "S&P500": "S&P500",
+  "NYダウ": "NYダウ",
+  "NASDAQ": "NASDAQ",
+  "USD/JPY": "ドル/円",
+  "USD/EUR": "ドル/ユーロ",
+  "BTC/USD": "ビットコイン",
+  "日経先物(CME:USD)": "日経先物(CME:USD)",
+  "日経先物(CME:Yen)": "日経先物(CME:Yen)",
+};
 
   const [selectedChartIndices, setSelectedChartIndices] = useState(["N225"]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y"];
@@ -148,22 +149,22 @@ export default function CompositeChart() {
   };
 
   const lineStyles = {
-    N225: { color: "#FF8C00", width: 1, dash: [] },
-    TOPIX: { color: "#FFA500", width: 1, dash: [5,3] },
-    "日経先物(Large)": { color: "#D2691E", width: 1, dash: [] },
-    "日経先物(Mini)": { color: "#CD853F", width: 1, dash: [2,2] },
-    "日経先物(CME:USD)": { color: "#FFB347", width: 1, dash: [1,2] },
-    "日経先物(CME:Yen)": { color: "#FF7F50", width: 1, dash: [3,3] },
-    "NYダウ": { color: "#1E90FF", width: 1, dash: [] },
-    "S&P500": { color: "#00BFFF", width: 1, dash: [5,3] },
-    "NASDAQ": { color: "#87CEFA", width: 1, dash: [2,2] },
-    "USD/JPY": { color: "#228B22", width: 1, dash: [] },
-    "USD/EUR": { color: "#32CD32", width: 1, dash: [3,3] },
-    "BTC/USD": { color: "#FFD700", width: 1, dash: [] },
-    "日長期金利": { color: "#FF4500", width: 1, dash: [4,2] },
-    "米長期金利": { color: "#FF6347", width: 1, dash: [2,2] },
-    "10年期待インフレ率": { color: "#FF1493", width: 1, dash: [1,2] },
-    "実質金利": { color: "#FF69B4", width: 1, dash: [5,5] },
+    N225: { color: "#FF8C00", width: 1.5, dash: [] },
+    TOPIX: { color: "#FFA500", width: 1.5, dash: [5,3] },
+    "日経先物(Large)": { color: "#D2691E", width: 1.5, dash: [] },
+    "日経先物(Mini)": { color: "#CD853F", width: 1.5, dash: [2,2] },
+    "日経先物(CME:USD)": { color: "#FFB347", width: 1.5, dash: [1,2] },
+    "日経先物(CME:Yen)": { color: "#FF7F50", width: 1.5, dash: [3,3] },
+    "NYダウ": { color: "#1E90FF", width: 1.5, dash: [] },
+    "S&P500": { color: "#00BFFF", width: 1.5, dash: [5,3] },
+    "NASDAQ": { color: "#87CEFA", width: 1.5, dash: [2,2] },
+    "USD/JPY": { color: "#228B22", width: 1.5, dash: [] },
+    "USD/EUR": { color: "#32CD32", width: 1.5, dash: [3,3] },
+    "BTC/USD": { color: "#FFD700", width: 1.5, dash: [] },
+    "日長期金利": { color: "#FF4500", width: 1.5, dash: [4,2] },
+    "米長期金利": { color: "#FF6347", width: 1.5, dash: [2,2] },
+    "10年期待インフレ率": { color: "#FF1493", width: 1.5, dash: [1,2] },
+    "実質金利": { color: "#FF69B4", width: 1.5, dash: [5,5] },
   };
 
   const chartData = {
@@ -195,19 +196,19 @@ export default function CompositeChart() {
           label: ctx => {
             const symbol = selectedChartIndices[ctx.datasetIndex];
             const val = candlesMap[symbol]?.[ctx.dataIndex]?.close ?? 0;
-            return `${displayNameMapping[symbol] || symbol}: ${val}`;
+            return `${displayNameMapping[symbol]||symbol}: ${val}`;
           },
           labelColor: ctx => {
             return {
               borderColor: ctx.dataset.borderColor,
-              backgroundColor: ctx.dataset.borderColor,
+              backgroundColor: ctx.dataset.borderColor, // 枠線色と同じで塗りつぶし
               borderWidth: 0,
-              borderRadius: 50,
+              borderRadius: 50, // 丸にする
             };
           },
           labelPointStyle: ctx => {
             return {
-              pointStyle: "circle",
+              pointStyle: "circle",   // 丸にする
               rotation: 0,
             };
           },
@@ -221,39 +222,26 @@ export default function CompositeChart() {
       },
     },
     scales: {
-      x: {
-        type: "time",
-        time: {
-          tooltipFormat:
-            selectedTimeframe.endsWith("d") ||
-            selectedTimeframe.endsWith("w") ||
-            selectedTimeframe.endsWith("M")
-              ? "MM/dd"
-              : "HH:mm",
-          displayFormats: {
-            minute: "HH:mm",
-            hour: "HH:mm",
-            day: "MM/dd",
-            month: "yyyy/MM",
-          },
-        },
-        ticks: { color: "#fff", maxTicksLimit: 10 },
-        grid: {
-          color: "rgba(255,255,255,0.05)",
-          drawBorder: true,
-          borderColor: "#FFD700",
-          borderWidth: 2,
-        },
-      },
       y: {
         type: "linear",
         display: true,
         position: "left",
         ticks: { color: "#fff", maxTicksLimit: 8 },
         grid: {
-          color: "rgba(255,255,255,0.05)",
-          drawBorder: true,
-          borderColor: "#FFD700",
+          color: "rgba(255,255,255,0.05)", // 背景グリッド線は薄く
+          drawTicks: true,
+          drawBorder: true,                 // 左の枠を表示
+          borderColor: "#FFD700",           // 左軸の枠線色
+          borderWidth: 2,
+        },
+      },
+      x: {
+        ticks: { color: "#fff", maxTicksLimit: 10 },
+        grid: {
+          color: "rgba(255,255,255,0.05)", // 背景グリッド線は薄く
+          drawTicks: true,
+          drawBorder: true,                 // 下の枠を表示
+          borderColor: "#FFD700",           // 下軸の枠線色
           borderWidth: 2,
         },
       },
@@ -309,26 +297,25 @@ export default function CompositeChart() {
         </div>
 
         {/* 線チャート（横スクロール対応、高さ固定） */}
-<div className="bg-[#1C1C1C] p-2 border border-[#3A3A3A] h-[600px] md:h-[450px] overflow-x-auto">
-  <div
-    className="h-full"
-    style={{
-      minWidth: `${Math.max(...selectedChartIndices.map(sym => candlesMap[sym]?.length ?? 0)) * 10}px`
-    }}
-  >
-    {Object.keys(candlesMap).length > 0 ? (
-      <Line
-        key={selectedChartIndices.join("-") + chartPeriod + selectedTimeframe}
-        data={chartData}
-        options={chartOptions}
-      />
-    ) : (
-      <div className="text-[#8A7A6A] text-center mt-24">
-        データが存在しません
-      </div>
-    )}
-  </div>
-</div>
+        <div className="bg-[#1C1C1C] p-2 border border-[#3A3A3A] h-[600px] md:h-[500px] overflow-x-auto">
+          <div
+            className="h-full"
+            style={{
+              minWidth: `${Math.max(...selectedChartIndices.map(sym => candlesMap[sym]?.length ?? 0)) * 10}px`
+            }}
+          >
+            {Object.keys(candlesMap).length > 0 ? (
+              <Line
+                data={chartData}
+                options={chartOptions}
+              />
+            ) : (
+              <div className="text-[#8A7A6A] text-center mt-24">
+                データが存在しません
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
