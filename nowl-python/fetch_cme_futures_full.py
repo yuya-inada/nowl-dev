@@ -1,0 +1,99 @@
+import requests
+import yfinance as yf
+from datetime import datetime
+import pytz
+import time as pytime
+
+# --- 設定 ---
+URL_POST = "http://localhost:8080/market-index-candles"  # データ送信
+URL_LATEST = "http://localhost:8080/market-index-candles/latest"  # 最新取得
+RETRY_LIMIT = 3
+JST = pytz.timezone("Asia/Tokyo")
+
+# CME先物（シンボルとmarketTypeの対応）
+CME_FUTURES = [
+    {"symbol": "NKD=F", "marketType": "CME_NKD_USD"},
+    {"symbol": "NIY=F", "marketType": "CME_NIY_YEN"},
+]
+
+# --- データ取得（日足固定） ---
+def fetch_daily(symbol, start="2004-01-01"):
+    ticker = yf.Ticker(symbol)
+    data = ticker.history(start=start, interval="1d")
+    if data.empty:
+        print(f"{symbol}: データが取得できませんでした")
+        return data
+
+    # JSTに変換
+    if data.index.tz is None:
+        data.index = data.index.tz_localize("UTC").tz_convert(JST)
+    else:
+        data.index = data.index.tz_convert(JST)
+
+    # ソート & 重複排除
+    data = data.sort_index()
+    data = data[~data.index.duplicated()]
+    return data
+
+
+# --- 最新 timestamp 取得 ---
+def get_latest_timestamp(symbol, market_type):
+    try:
+        response = requests.get(URL_LATEST, params={"symbol": symbol, "marketType": market_type})
+        if response.status_code == 200:
+            latest = response.json()
+            return latest["timestamp"]
+    except Exception as e:
+        print(f"[{market_type}] 最新取得エラー: {e}")
+    return None
+
+
+# --- 送信 ---
+def send_candle(payload):
+    for attempt in range(RETRY_LIMIT):
+        try:
+            response = requests.post(URL_POST, json=payload)
+            if response.status_code == 200:
+                print(f"[{payload['marketType']}] {payload['timestamp']} 送信成功")
+                return True
+            else:
+                print(f"[{payload['marketType']}] 送信失敗: {response.status_code} {response.text}")
+        except Exception as e:
+            print(f"[{payload['marketType']}] 送信エラー: {e}")
+        pytime.sleep(1)
+    return False
+
+
+# --- メイン処理 ---
+def process_cme_future(future):
+    symbol = future["symbol"]
+    market_type = future["marketType"]
+
+    print(f">>> {market_type} ({symbol}) の過去データ取得開始...")
+    data = fetch_daily(symbol)
+
+    if data.empty:
+        return
+
+    latest_ts = get_latest_timestamp(symbol, market_type)
+
+    for index, row in data.iterrows():
+        ts_str = index.strftime("%Y-%m-%dT%H:%M:%S")
+        if latest_ts and ts_str <= latest_ts:
+            continue
+        payload = {
+            "symbol": symbol,
+            "marketType": market_type,
+            "timestamp": ts_str,
+            "open": float(row['Open']),
+            "high": float(row['High']),
+            "low": float(row['Low']),
+            "close": float(row['Close']),
+            "volume": int(row['Volume'])
+        }
+        send_candle(payload)
+
+
+if __name__ == "__main__":
+    for future in CME_FUTURES:
+        process_cme_future(future)

@@ -18,7 +18,7 @@ JST = pytz.timezone("Asia/Tokyo")
 # 対象市場リスト（symbol = Yahoo!Financeティッカー, marketType = DB保存用ラベル）
 MARKETS = [
     {"symbol": "^N225", "marketType": "N225"},
-    {"symbol": "^TOPX", "marketType": "TOPIX"},
+    {"symbol": "^TPX", "marketType": "TOPIX"},
     {"symbol": "JPY=X", "marketType": "USD/JPY"},
     {"symbol": "EURJPY=X", "marketType": "USD/EUR"},
     {"symbol": "EURUSD=X", "marketType": "EUR/USD"},
