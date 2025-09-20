@@ -31,6 +31,7 @@ export default function CompositeChart() {
     "日経先物(CME:Yen)",
     "USD/JPY",
     "USD/EUR",
+    "EUR/JPY",
     "NYダウ",
     "S&P500",
     "NASDAQ",
@@ -47,41 +48,61 @@ export default function CompositeChart() {
     "NASDAQ": "^IXIC",
     "N225": "^N225",
     "USD/JPY": "JPY=X",
-    "EUR/USD": "EURUSD=X",
     "USD/EUR": "EURUSD=X",
+    "EUR/JPY": "EURJPY=X",
     "BTC/USD": "BTC-USD",
     "日経先物(CME:USD)": "CME_NKD_USD",
     "日経先物(CME:Yen)": "CME_NIY_YEN",
+    "米長期金利": "^TNX",
+    "10年期待インフレ率": "^T10YIE",
+    "実質金利": "REAL_RATE",
   };
 
   const displayNameMapping = {
-  "N225": "日経平均株価",
-  "TOPIX": "TOPIX",
-  "S&P500": "S&P500",
-  "NYダウ": "NYダウ",
-  "NASDAQ": "NASDAQ",
-  "USD/JPY": "ドル/円",
-  "USD/EUR": "ドル/ユーロ",
-  "BTC/USD": "ビットコイン",
-  "日経先物(CME:USD)": "日経先物(CME:USD)",
-  "日経先物(CME:Yen)": "日経先物(CME:Yen)",
-};
+    "N225": "日経平均株価",
+    "TOPIX": "TOPIX",
+    "S&P500": "S&P500",
+    "NYダウ": "NYダウ",
+    "NASDAQ": "NASDAQ",
+    "USD/JPY": "ドル/円",
+    "USD/EUR": "ドル/ユーロ",
+    "EUR/JPY": "ユーロ/円",
+    "BTC/USD": "ビットコイン",
+    "米長期金利": "米国10年国債利回り",
+    "10年期待インフレ率": "米国10年期待インフレ率",
+    "実質金利": "実質金利",
+  };
 
-  const [selectedChartIndices, setSelectedChartIndices] = useState(["N225"]);
+  const [selectedChartIndices, setSelectedChartIndices] = useState([
+    "N225",
+    "NYダウ",
+    "S&P500",
+    "NASDAQ",
+  ]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
   const timeframes = ["1m","2m","3m","4m","5m","10m","15m","30m","60m","1d","1w","1M"];
-  const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("60m");
   const [candlesMap, setCandlesMap] = useState({});
 
   const colors = {
-    N225: "#FF8C00", TOPIX: "#FFA500",
-    "日経先物(Large)": "#D2691E", "日経先物(Mini)": "#CD853F",
-    "日経先物(CME:USD)": "#FFB347", "日経先物(CME:Yen)": "#FF7F50",
-    "NYダウ": "#1E90FF", "S&P500": "#00BFFF", "NASDAQ": "#87CEFA",
-    "USD/JPY": "#228B22", "USD/EUR": "#32CD32", "BTC/USD": "#FFD700",
-    "日長期金利": "#FF4500", "米長期金利": "#FF6347",
-    "10年期待インフレ率": "#FF1493", "実質金利": "#FF69B4",
+    N225: "#FF8C00",
+    TOPIX: "#FFA500",
+    "日経先物(Large)": "#D2691E",
+    "日経先物(Mini)": "#CD853F",
+    "日経先物(CME:USD)": "#FFB347",
+    "日経先物(CME:Yen)": "#FF7F50",
+    "NYダウ": "#1E90FF",
+    "S&P500": "#00BFFF",
+    "NASDAQ": "#87CEFA",
+    "USD/JPY": "#228B22",
+    "USD/EUR": "#32CD32",
+    "EUR/JPY": "#20B2AA",
+    "BTC/USD": "#FFD700",
+    "日長期金利": "#FF4500",
+    "米長期金利": "#FF6347",
+    "10年期待インフレ率": "#FF1493",
+    "実質金利": "#FF69B4",
   };
 
   const handleChartIndexChange = (index) => {
@@ -99,7 +120,7 @@ export default function CompositeChart() {
     }
 
     const now = new Date();
-    let fromDate;
+    let fromDate = new Date(now);
     switch (chartPeriod) {
       case "1M": fromDate = new Date(now.setMonth(now.getMonth() - 1)); break;
       case "3M": fromDate = new Date(now.setMonth(now.getMonth() - 3)); break;
@@ -113,6 +134,10 @@ export default function CompositeChart() {
       case "10Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 10)); break;
       default: fromDate = new Date(0);
     }
+
+    console.log("📌 chartPeriod:", chartPeriod);
+    console.log("📌 fromDate (Local):", fromDate.toString());
+    console.log("📌 fromDate (ISO):", fromDate.toISOString());
 
     Promise.all(
       selectedChartIndices.map((symbol) => {
@@ -160,6 +185,7 @@ export default function CompositeChart() {
     "NASDAQ": { color: "#87CEFA", width: 1.5, dash: [2,2] },
     "USD/JPY": { color: "#228B22", width: 1.5, dash: [] },
     "USD/EUR": { color: "#32CD32", width: 1.5, dash: [3,3] },
+    "EUR/JPY": { color: "#20B2AA", width: 1.5, dash: [3,3] },
     "BTC/USD": { color: "#FFD700", width: 1.5, dash: [] },
     "日長期金利": { color: "#FF4500", width: 1.5, dash: [4,2] },
     "米長期金利": { color: "#FF6347", width: 1.5, dash: [2,2] },
@@ -236,7 +262,7 @@ export default function CompositeChart() {
         },
       },
       x: {
-        ticks: { color: "#fff", maxTicksLimit: 10 },
+        ticks: { display: false, color: "#fff", maxTicksLimit: 10 },
         grid: {
           color: "rgba(255,255,255,0.05)", // 背景グリッド線は薄く
           drawTicks: true,

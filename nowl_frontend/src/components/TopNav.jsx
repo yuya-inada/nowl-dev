@@ -7,9 +7,51 @@ export default function TopNav() {
 
   const terminalFunctions = [
     { code: "HOME" },
-    { code: "NEWS" },
-    { code: "STOCKS" },
+    { code: "MARKETS"},
+    { code: "Main Index"},
+    { code: "Fixed-Point"},
+    { code: "Observation"},
+    { code: "By Entity"},
+    { code: "Supply and Demand"},
+    { code: "PROPOSALS" },
+    { code: "My-Portfolio" },
     { code: "SETTINGS" },
+  ];
+  // 現在の日付を取得（例として固定）
+  const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const weekday = weekdays[today.getDay()];
+    return `${year}/${month}/${day} (${weekday})`;
+  };
+
+  const menuItems = [
+    "マーケット",
+    "取引画面",
+    "資産管理",
+    "戦略提案",
+    "目標設定、進捗管理",
+    "Nowl相談",
+    "学習傾向分析",
+    "お知らせ",
+    "設定",
+  ];
+
+  const adminMenuItems = [
+    "Nowlロジック管理",
+    "システム設定、障害管理",
+    "ログ分析",
   ];
 
   return (

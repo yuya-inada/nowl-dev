@@ -1,4 +1,4 @@
-# ------------------ 修正版 ------------------
+# ------------------ 修正版（10年期待インフレ率削除） ------------------
 import requests
 import yfinance as yf
 from datetime import datetime, time, timedelta
@@ -20,13 +20,14 @@ MARKETS = [
     {"symbol": "^N225", "marketType": "N225"},
     {"symbol": "^TPX", "marketType": "TOPIX"},
     {"symbol": "JPY=X", "marketType": "USD/JPY"},
-    {"symbol": "EURJPY=X", "marketType": "USD/EUR"},
-    {"symbol": "EURUSD=X", "marketType": "EUR/USD"},
+    {"symbol": "EURJPY=X", "marketType": "EUR/JPY"},
+    {"symbol": "EURUSD=X", "marketType": "USD/EUR"},
     {"symbol": "^DJI", "marketType": "NYダウ"},
     {"symbol": "^GSPC", "marketType": "S&P500"},
     {"symbol": "^IXIC", "marketType": "NASDAQ"},
     {"symbol": "BTC-USD", "marketType": "BTC/USD"},
     # 先物や金利などは後で追加
+    {"symbol": "^TNX", "marketType": "米長期金利"},
 ]
 
 # 市場の昼休み設定（必要に応じて追加）
@@ -36,7 +37,6 @@ MARKET_BREAKS = {
     "CME": [],
     "NYSE": [],
 }
-
 
 # --- データ取得 ---
 def fetch_candles(symbol, start=None, end=None, interval="1m", market_type="N225"):
@@ -108,10 +108,13 @@ def process_market(market, target_date):
 
     latest_ts = get_latest_timestamp(symbol, market_type)
 
+    tnx_close_latest = None  # 実質金利計算用に米長期金利だけ保持
+
     for index, row in data.iterrows():
         ts_str = index.strftime("%Y-%m-%dT%H:%M:%S")
         if latest_ts and ts_str <= latest_ts:
             continue
+
         payload = {
             "symbol": symbol,
             "marketType": market_type,
@@ -124,6 +127,10 @@ def process_market(market, target_date):
         }
         send_candle(payload)
 
+        if market_type == "米長期金利":
+            tnx_close_latest = float(row['Close'])
+
+        # 実質金利は今後別モジュールで計算
 
 # --- CLI ---
 if __name__ == "__main__":
@@ -132,7 +139,6 @@ if __name__ == "__main__":
     parser.add_argument("--end-date", type=str, help="取得終了日(YYYY-MM-DD)")
     args = parser.parse_args()
 
-    # 日付範囲指定
     start_day = datetime.strptime(args.start_date, "%Y-%m-%d") if args.start_date else datetime.now(JST)
     end_day = datetime.strptime(args.end_date, "%Y-%m-%d") if args.end_date else start_day
 

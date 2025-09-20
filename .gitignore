@@ -1,3 +1,7 @@
+# =========================
+# ルート共通設定
+# =========================
+
 # Logs
 logs
 *.log
@@ -33,14 +37,15 @@ __pycache__/
 *.egg
 *.egg-info/
 .eggs/
-# ルート
-.env
-nowl_backend/.env
-nowl_frontend/.env
 .venv/
 venv/
 
-# FastAPI specific
+# Environment files
+.env
+nowl_backend/.env
+nowl_frontend/.env
+
+# FastAPI / DB
 *.db
 *.sqlite3
 
@@ -54,4 +59,37 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# Vite
 .vite/
+
+# =========================
+# Backend-specific (Java / Maven / Gradle)
+# =========================
+
+# Maven / Gradle build output
+nowl-backend/target/
+nowl-backend/build/
+nowl-backend/.mvn/wrapper/maven-wrapper.jar
+!nowl-backend/**/src/main/**/target/
+!nowl-backend/**/src/test/**/target/
+!nowl-backend/**/src/main/**/build/
+!nowl-backend/**/src/test/**/build/
+
+# IDE files
+nowl-backend/.idea/
+nowl-backend/.classpath
+nowl-backend/.factorypath
+nowl-backend/.project
+nowl-backend/.settings/
+nowl-backend/.springBeans
+nowl-backend/.sts4-cache
+
+# NetBeans
+nowl-backend/nbproject/private/
+nowl-backend/nbbuild/
+nowl-backend/dist/
+nowl-backend/nbdist/
+nowl-backend/.nb-gradle/
+
+# VS Code (backend)
+nowl-backend/.vscode/

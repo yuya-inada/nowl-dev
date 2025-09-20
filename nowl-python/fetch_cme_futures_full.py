@@ -3,6 +3,7 @@ import yfinance as yf
 from datetime import datetime
 import pytz
 import time as pytime
+import sys
 
 # --- 設定 ---
 URL_POST = "http://localhost:8080/market-index-candles"  # データ送信
@@ -16,13 +17,26 @@ CME_FUTURES = [
     {"symbol": "NIY=F", "marketType": "CME_NIY_YEN"},
 ]
 
-# --- データ取得（日足固定） ---
-def fetch_daily(symbol, start="2004-01-01"):
+# --- データ取得（1分足優先、無理なら日足） ---
+def fetch_candles(symbol, lookback_days=5, start="2004-01-01"):
     ticker = yf.Ticker(symbol)
-    data = ticker.history(start=start, interval="1d")
-    if data.empty:
-        print(f"{symbol}: データが取得できませんでした")
-        return data
+
+    # まず1分足を試す
+    try:
+        data = ticker.history(period=f"{lookback_days}d", interval="1m")
+        if not data.empty:
+            print(f"{symbol}: 1分足データ取得成功 ({len(data)}件)")
+            granularity = "1m"
+        else:
+            raise ValueError("1分足データなし")
+    except Exception:
+        # 1分足取れない場合は日足
+        data = ticker.history(start=start, interval="1d")
+        if data.empty:
+            print(f"{symbol}: データ取得不可")
+            return None, None
+        granularity = "1d"
+        print(f"{symbol}: 日足データ取得 ({len(data)}件)")
 
     # JSTに変換
     if data.index.tz is None:
@@ -33,7 +47,7 @@ def fetch_daily(symbol, start="2004-01-01"):
     # ソート & 重複排除
     data = data.sort_index()
     data = data[~data.index.duplicated()]
-    return data
+    return data, granularity
 
 
 # --- 最新 timestamp 取得 ---
@@ -69,10 +83,10 @@ def process_cme_future(future):
     symbol = future["symbol"]
     market_type = future["marketType"]
 
-    print(f">>> {market_type} ({symbol}) の過去データ取得開始...")
-    data = fetch_daily(symbol)
+    print(f">>> {market_type} ({symbol}) のデータ取得開始...")
+    data, granularity = fetch_candles(symbol)
 
-    if data.empty:
+    if data is None:
         return
 
     latest_ts = get_latest_timestamp(symbol, market_type)
@@ -89,11 +103,35 @@ def process_cme_future(future):
             "high": float(row['High']),
             "low": float(row['Low']),
             "close": float(row['Close']),
-            "volume": int(row['Volume'])
+            "volume": int(row['Volume']),
+            "granularity": granularity  # 粒度情報も送信
         }
         send_candle(payload)
 
 
 if __name__ == "__main__":
+    start_date = None
+    if len(sys.argv) > 1:
+        start_date = sys.argv[1]  # 例: "2025-09-08"
     for future in CME_FUTURES:
-        process_cme_future(future)
+        if start_date:
+            data, granularity = fetch_candles(future["symbol"], start=start_date)
+            latest_ts = get_latest_timestamp(future["symbol"], future["marketType"])
+            for index, row in data.iterrows():
+                ts_str = index.strftime("%Y-%m-%dT%H:%M:%S")
+                if latest_ts and ts_str <= latest_ts:
+                    continue
+                payload = {
+                    "symbol": future["marketType"],
+                    "marketType": future["marketType"],
+                    "timestamp": ts_str,
+                    "open": float(row['Open']),
+                    "high": float(row['High']),
+                    "low": float(row['Low']),
+                    "close": float(row['Close']),
+                    "volume": int(row['Volume']),
+                    "granularity": granularity
+                }
+                send_candle(payload)
+        else:
+            process_cme_future(future)
