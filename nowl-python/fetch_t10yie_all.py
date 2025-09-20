@@ -3,9 +3,10 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import os
 
 JST = pytz.timezone("Asia/Tokyo")
-FRED_API_KEY = "96098eb68a3df3cbf216e4a7cf1c6050"
+FRED_API_KEY = os.getenv("FRED_API_KEY")
 SERIES_ID = "T10YIE"
 CSV_FILE = "T10YIE_all.csv"
 
