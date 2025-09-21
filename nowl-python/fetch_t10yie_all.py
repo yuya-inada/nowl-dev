@@ -4,9 +4,14 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import os
+from dotenv import load_dotenv
+
+# .env を読み込む
+load_dotenv()
 
 JST = pytz.timezone("Asia/Tokyo")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
+# print("DEBUG: FRED_API_KEY =", FRED_API_KEY)  # ←追加
 SERIES_ID = "T10YIE"
 CSV_FILE = "T10YIE_all.csv"
 
