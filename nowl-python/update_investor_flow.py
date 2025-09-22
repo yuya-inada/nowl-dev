@@ -8,6 +8,8 @@ import re
 import asyncio
 from databases import Database
 import os
+from dotenv import load_dotenv
+load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
 # --- DB設定 ---
 DATABASE_URL = os.getenv(

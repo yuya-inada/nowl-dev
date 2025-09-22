@@ -11,7 +11,6 @@ load_dotenv()
 
 JST = pytz.timezone("Asia/Tokyo")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
-# print("DEBUG: FRED_API_KEY =", FRED_API_KEY)  # ←追加
 SERIES_ID = "T10YIE"
 CSV_FILE = "T10YIE_all.csv"
 
