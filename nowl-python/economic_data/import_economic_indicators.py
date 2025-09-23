@@ -1,4 +1,6 @@
 # import_economic_indicators.py
+# 仕様CSVファイル： economic_indicators.csv
+
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz

@@ -9,6 +9,8 @@ import asyncio
 from databases import Database
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
 # --- DB設定 ---
@@ -20,9 +22,17 @@ database = Database(DATABASE_URL)
 
 # --- JPX PDF取得 ---
 JPX_URL = "https://www.jpx.co.jp/markets/statistics-equities/investor-type/index.html"
-response = requests.get(JPX_URL)
-response.raise_for_status()
-soup = BeautifulSoup(response.text, "html.parser")
+resp = requests.get(JPX_URL)
+resp.raise_for_status()
+soup = BeautifulSoup(resp.text, "html.parser")
+
+# Chrome extension URL対応
+def normalize_href(href: str) -> str:
+    if href.startswith("chrome-extension://"):
+        i = href.find("http")
+        if i >= 0:
+            return href[i:]
+    return href
 
 pdf_links = [
     urljoin(JPX_URL, a["href"])
@@ -34,6 +44,22 @@ pdf_links = [
 def extract_date_from_filename(url):
     match = re.search(r"(\d{6})\.pdf", url)
     return match.group(1) if match else None
+
+# 週番号を考慮して日付変換
+def parse_weekly_code(code: str) -> datetime.date:
+    """
+    例: 250902 -> 2025年9月第2週
+    基準: 月曜始まり、週番号を月内の第N週として計算
+    """
+    yy = int(code[:2])
+    mm = int(code[2:4])
+    week_no = int(code[4:])
+
+    year = 2000 + yy
+    first_day = datetime(year, mm, 1)
+    first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
+    target_date = first_monday + timedelta(days=(week_no - 1) * 7)
+    return target_date.date()
 
 pdf_with_dates = [(url, extract_date_from_filename(url)) for url in pdf_links]
 pdf_with_dates = [(url, d) for url, d in pdf_with_dates if d]
@@ -114,7 +140,7 @@ async def main():
         updated_at = NOW()
     """
     pdf_date_str = extract_date_from_filename(latest_pdf_url)
-    pdf_date = pd.to_datetime(pdf_date_str, format="%y%m%d").date()
+    pdf_date = parse_weekly_code(pdf_date_str)
 
     for _, row in investor_df.iterrows():
         values = {
@@ -126,7 +152,7 @@ async def main():
         await database.execute(query=query, values=values)
 
     await database.disconnect()
-    print("Investor flow data updated!")
+    print(f"Investor flow data updated for week starting {pdf_date}!")
 
 if __name__ == "__main__":
     asyncio.run(main())
