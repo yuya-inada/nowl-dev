@@ -9,13 +9,17 @@ import pandas as pd
 from datetime import datetime
 from save_to_db import save_indicator_to_db
 import psycopg2
+from dotenv import load_dotenv
+import os
+
+load_dotenv("/Users/inadayuuya/nowl-dev/.env")  # パスは環境に合わせる
 
 DB_PARAMS = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "nowldb",
-    "user": "inadayuuya",
-    "password": "postgres",
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
 def get_other_master_list(country_code="US"):

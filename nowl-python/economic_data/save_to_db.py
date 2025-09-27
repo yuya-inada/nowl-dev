@@ -2,13 +2,17 @@
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv("/Users/inadayuuya/nowl-dev/.env")  # パスは環境に合わせる
 
 DB_PARAMS = {
     "host": "localhost",
     "port": 5432,
-    "dbname": "nowldb",
-    "user": "inadayuuya",
-    "password": "",
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
 def save_indicator_to_db(date, country_code, country_name, indicator_name, actual_value,

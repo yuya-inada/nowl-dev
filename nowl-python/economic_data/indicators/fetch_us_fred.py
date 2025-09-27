@@ -25,11 +25,11 @@ JST = pytz.timezone("Asia/Tokyo")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 
 DB_PARAMS = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "nowldb",
-    "user": "inadayuuya",
-    "password": "postgres",
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
 def get_master_list(country_code="US", source="FRED"):

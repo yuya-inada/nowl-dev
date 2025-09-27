@@ -6,13 +6,17 @@ from datetime import datetime
 import re
 import pdfplumber
 from io import BytesIO
+from dotenv import load_dotenv
+import os
+
+load_dotenv("/Users/inadayuuya/nowl-dev/.env")  # パスは環境に合わせる
 
 DB_PARAMS = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "nowldb",
-    "user": "inadayuuya",
-    "password": "postgres",
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
 FRB_FOMC_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
