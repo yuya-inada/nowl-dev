@@ -124,15 +124,38 @@ def save_events_to_db(events):
     conn = psycopg2.connect(**DB_PARAMS)
     cur = conn.cursor()
     for e in events:
-        cur.execute("""
-            INSERT INTO economic_events 
-            (event_date, country_code, event_name, statement_pdf_url, press_conf_url, minutes_pdf_url, projection_pdf_url, text_content, description)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            e["event_date"], e["country_code"], e["event_name"],
-            e["statement_pdf_url"], e["press_conf_url"], e["minutes_pdf_url"], e["projection_pdf_url"],
-            e["text_content"], e["description"]
-        ))
+      # 既存イベント確認
+      cur.execute("""
+          SELECT id, text_extracted FROM economic_events
+          WHERE event_name=%s AND event_date=%s
+      """, ("FOMC", e["event_date"]))
+      row = cur.fetchone()
+
+      if row is None:
+          # 新規挿入 → text_content も取得
+          cur.execute("""
+              INSERT INTO economic_events 
+              (event_date, country_code, event_name, statement_pdf_url, press_conf_url,
+              minutes_pdf_url, projection_pdf_url, text_content, description, text_extracted)
+              VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+          """, (
+              e["event_date"], e["country_code"], e["event_name"],
+              e["statement_pdf_url"], e["press_conf_url"], e["minutes_pdf_url"], e["projection_pdf_url"],
+              e["text_content"], e["description"], True if e["text_content"] else False
+          ))
+      else:
+          # 既存行更新 → text_content は既に抽出済みなら更新しない
+          text_content = e["text_content"] if not row[1] else None
+          cur.execute("""
+              UPDATE economic_events
+              SET statement_pdf_url=%s, press_conf_url=%s, minutes_pdf_url=%s, 
+                  projection_pdf_url=%s, text_content=COALESCE(%s,text_content),
+                  description=%s, text_extracted=COALESCE(%s,text_extracted)
+              WHERE id=%s
+          """, (
+              e["statement_pdf_url"], e["press_conf_url"], e["minutes_pdf_url"], e["projection_pdf_url"],
+              text_content, e["description"], True if text_content else row[1], row[0]
+          ))
     conn.commit()
     cur.close()
     conn.close()
