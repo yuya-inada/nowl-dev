@@ -14,10 +14,9 @@ from datetime import datetime, timedelta
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
 # --- DB設定 ---
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://nowluser:nowlowlione@localhost:5432/nowldb"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Check your .env file")
 database = Database(DATABASE_URL)
 
 # --- JPX PDF取得 ---
