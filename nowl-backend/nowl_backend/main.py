@@ -7,6 +7,9 @@ from datetime import datetime, date, time
 import pytz
 from typing import List, Optional
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
 # --------------------------
 # DB接続設定
@@ -57,7 +60,7 @@ async def db_test():
 @app.get("/market-index-candles")
 async def get_candles(
     symbol: str = Query(...),
-    from_: str | None = Query(None, alias="from"),
+    from_: Optional[str] = Query(None, alias="from"),
     interval: str = Query("1m"),  # 足種指定
 ):
     JST = pytz.timezone("Asia/Tokyo")
