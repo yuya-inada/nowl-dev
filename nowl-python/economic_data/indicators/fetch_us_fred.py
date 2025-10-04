@@ -18,7 +18,7 @@ import requests
 from datetime import datetime, timedelta
 import pytz
 import psycopg2
-from save_to_db import save_indicator_to_db
+from economic_data.save_to_db import save_indicator_to_db
 import argparse
 
 JST = pytz.timezone("Asia/Tokyo")
