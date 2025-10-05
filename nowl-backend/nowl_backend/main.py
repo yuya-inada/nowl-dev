@@ -448,3 +448,31 @@ async def create_economic_indicator_safe(indicator: EconomicIndicatorIn):
     except Exception as e:
         print("DB INSERT エラー:", e)
         raise HTTPException(status_code=500, detail=f"DB INSERT エラー: {e}")
+
+# --------------------------
+# 経済カレンダー一覧取得 API
+# --------------------------
+@app.get("/economic-calendar")
+async def get_economic_calendar(limit: int = 50):
+    query = """
+        SELECT event_datetime, country_code, indicator_name,
+               actual_value, forecast_value, previous_value
+        FROM economic_calendar
+        ORDER BY event_datetime ASC
+        LIMIT :limit
+    """
+    try:
+        rows = await database.fetch_all(query=query, values={"limit": limit})
+        return [
+            {
+                "event_datetime": r["event_datetime"],
+                "country_code": r["country_code"],
+                "indicator_name": r["indicator_name"],
+                "actual_value": r["actual_value"],
+                "forecast_value": r["forecast_value"],
+                "previous_value": r["previous_value"]
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB取得エラー: {str(e)}")
