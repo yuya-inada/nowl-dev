@@ -1,117 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const EconomicCalendar = () => {
   const [calendarView, setCalendarView] = useState("TODAY");
+  const [todayEvents, setTodayEvents] = useState([]);
+  const [weekEvents, setWeekEvents] = useState([]);  // 配列で週ごとに日別データを持つ
+  const [monthEvents, setMonthEvents] = useState([]); // 配列で月ごとに週ごとに日別データを持つ
   const [currentWeek, setCurrentWeek] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(0);
-
-  // ==== ダミーデータ ====
-  const weeklyCalendar = [
-    {
-      week: 0,
-      days: [
-        { day: "月", date: "12/23", events: [
-            { time: "08:30", event: "日銀政策会合", country: "JP", importance: "HIGH" },
-            { time: "10:00", event: "消費者物価指数", country: "JP", importance: "MEDIUM" }
-          ]
-        },
-        { day: "火", date: "12/24", events: [
-            { time: "21:30", event: "米雇用統計", country: "US", importance: "HIGH" },
-            { time: "22:00", event: "ISM製造業指数", country: "US", importance: "MEDIUM" }
-          ]
-        },
-        { day: "水", date: "12/25", events: [
-            { time: "18:00", event: "ECB政策金利", country: "EU", importance: "HIGH" }
-          ]
-        },
-        { day: "木", date: "12/26", events: [
-            { time: "11:00", event: "中国PMI", country: "CN", importance: "LOW" },
-            { time: "15:00", event: "独IFO指数", country: "DE", importance: "MEDIUM" }
-          ]
-        },
-        { day: "金", date: "12/27", events: [
-            { time: "22:30", event: "米GDP速報", country: "US", importance: "HIGH" }
-          ]
-        },
-      ],
-    },
-    {
-      week: 1,
-      days: [
-        { day: "月", date: "12/30", events: [
-            { time: "09:00", event: "日本鉱工業生産", country: "JP", importance: "MEDIUM" }
-          ]
-        },
-        { day: "火", date: "12/31", events: [
-            { time: "21:30", event: "米個人所得", country: "US", importance: "MEDIUM" }
-          ]
-        },
-        { day: "水", date: "1/1", events: [
-            { time: "休場", event: "元日", country: "JP", importance: "LOW" }
-          ]
-        },
-        { day: "木", date: "1/2", events: [
-            { time: "休場", event: "年始休場", country: "JP", importance: "LOW" }
-          ]
-        },
-        { day: "金", date: "1/3", events: [
-            { time: "09:00", event: "取引開始", country: "JP", importance: "MEDIUM" }
-          ]
-        },
-      ],
-    },
-  ];
-
-  const monthlyCalendar = [
-    {
-      month: 0,
-      weeks: [
-        [
-          { date: "1/1", events: [{ event: "元日", importance: "LOW" }] },
-          { date: "1/2", events: [{ event: "年始休場", importance: "LOW" }] },
-          { date: "1/3", events: [{ event: "取引開始", importance: "MEDIUM" }] },
-          { date: "1/4", events: [{ event: "米雇用統計", importance: "HIGH" }] },
-          { date: "1/5", events: [{ event: "ECB政策金利", importance: "HIGH" }] },
-        ],
-        [
-          { date: "1/8", events: [{ event: "日銀政策会合", importance: "HIGH" }] },
-          { date: "1/9", events: [{ event: "中国CPI", importance: "MEDIUM" }] },
-          { date: "1/10", events: [{ event: "米CPI", importance: "HIGH" }] },
-          { date: "1/11", events: [{ event: "独ZEW指数", importance: "MEDIUM" }] },
-          { date: "1/12", events: [{ event: "米PPI", importance: "MEDIUM" }] },
-        ],
-        [
-          { date: "1/15", events: [{ event: "中国GDP", importance: "HIGH" }] },
-          { date: "1/16", events: [{ event: "米小売売上高", importance: "HIGH" }] },
-          { date: "1/17", events: [{ event: "英CPI", importance: "MEDIUM" }] },
-          { date: "1/18", events: [{ event: "日本CPI", importance: "HIGH" }] },
-          { date: "1/19", events: [{ event: "米住宅着工", importance: "LOW" }] },
-        ],
-        [
-          { date: "1/22", events: [{ event: "日銀金融政策", importance: "HIGH" }] },
-          { date: "1/23", events: [{ event: "米FOMC", importance: "HIGH" }] },
-          { date: "1/24", events: [{ event: "ECB理事会", importance: "HIGH" }] },
-          { date: "1/25", events: [{ event: "米GDP", importance: "HIGH" }] },
-          { date: "1/26", events: [{ event: "日本失業率", importance: "MEDIUM" }] },
-        ],
-      ],
-    },
-  ];
-
-  const economicCalendar = {
-    TODAY: [
-      { time: "08:30", event: "日銀政策会合", country: "JP", importance: "HIGH" },
-      { time: "10:00", event: "消費者物価指数", country: "JP", importance: "HIGH" },
-      { time: "14:00", event: "鉱工業生産", country: "JP", importance: "MEDIUM" },
-      { time: "21:30", event: "米雇用統計", country: "US", importance: "HIGH" },
-      { time: "21:30", event: "失業率", country: "US", importance: "HIGH" },
-      { time: "21:30", event: "平均時給", country: "US", importance: "MEDIUM" },
-      { time: "22:00", event: "ISM製造業指数", country: "US", importance: "HIGH" },
-      { time: "23:30", event: "原油在庫量", country: "US", importance: "MEDIUM" },
-      { time: "18:00", event: "ECB政策金利", country: "EU", importance: "HIGH" },
-      { time: "18:45", event: "ECB総裁会見", country: "EU", importance: "HIGH" },
-    ],
-  };
 
   const getCurrentDate = () => {
     const today = new Date();
@@ -123,12 +18,84 @@ const EconomicCalendar = () => {
     return `${year}/${month}/${day} (${weekday})`;
   };
 
+  // ===== API取得 =====
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const todayRes = await fetch("http://localhost:8081/economic-calendar/today");
+        const weekRes = await fetch("http://localhost:8081/economic-calendar/week");
+        const monthRes = await fetch("http://localhost:8081/economic-calendar/month");
+        if (!todayRes.ok || !weekRes.ok || !monthRes.ok) throw new Error("HTTP error");
+
+        const todayData = await todayRes.json();
+        const weekData = await weekRes.json();     // 週データ: [{ day, date, events: [...] }, ...]
+        const monthData = await monthRes.json();   // 月データ: [[{ date, events: [...] }, ...], ...]
+
+        setTodayEvents(todayData);
+        setWeekEvents(weekData);
+        setMonthEvents(monthData);
+      } catch (err) {
+        console.error("API取得エラー:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const renderTable = (events) => (
+    <table className="w-full text-sm border border-[#3A3A3A]">
+      <thead>
+        <tr className="bg-[#3A3A3A] text-[#D4B08C]">
+          <th className="p-2 border-b border-[#4A4A4A] text-center">Status</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-center">Time</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-center">Country</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-left">Event</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-right">Actual</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-right">Forecast</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-right">Previous</th>
+          <th className="p-2 border-b border-[#4A4A4A] text-center">Importance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {events.map((event, index) => {
+          const time = new Date(event.event_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          return (
+            <tr key={index} className="border-b border-[#4A4A4A] last:border-b-0">
+              <td className="p-2 text-center">
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                  event.status === "未発表" ? "text-red-400" : "text-[#D4B08C]"
+                }`}>
+                  {event.status || ""}
+                </span>
+              </td>
+              <td className="p-2 font-mono text-[#8A7A6A] text-center">{time}</td>
+              <td className="p-2 font-semibold text-[#D4B08C] text-center">{event.country_code}</td>
+              <td className="p-2 text-[#D4B08C] text-left">{event.indicator_name}</td>
+              <td className="p-2 text-right">{event.actual_value || ""}</td>
+              <td className="p-2 text-right">{event.forecast_value || ""}</td>
+              <td className="p-2 text-right">{event.previous_value || ""}</td>
+              <td className="p-2 text-center">
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                  event.importance === "HIGH" ? "bg-red-600 text-white" :
+                  event.importance === "MEDIUM" ? "bg-yellow-500 text-black" :
+                  "bg-gray-500 text-gray-300"
+                }`}>
+                  {event.importance || ""}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
   return (
     <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
+      {/* Header */}
       <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
         <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">ECONOMIC CALENDAR</h2>
         <div className="flex space-x-1">
-          {["TODAY","WEEK","MONTH"].map((view) => (
+          {["TODAY","WEEK","MONTH"].map(view => (
             <button
               key={view}
               onClick={() => setCalendarView(view)}
@@ -147,72 +114,62 @@ const EconomicCalendar = () => {
       <div className="p-4">
         {/* TODAY */}
         {calendarView === "TODAY" && (
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-[#D4B08C] mb-2">{getCurrentDate()}</h3>
+            {renderTable(todayEvents)}
+          </div>
+        )}
+
+        {/* WEEK */}
+        {calendarView === "WEEK" && weekEvents.length > 0 && weekEvents[currentWeek]?.days && (
           <div>
-            <div className="mb-4 pb-2 border-b border-[#3A3A3A]">
-              <h3 className="text-base font-semibold text-[#D4B08C]">{getCurrentDate()}</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#D4B08C]">週表示</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCurrentWeek(Math.max(0, currentWeek - 1))}
+                  disabled={currentWeek === 0}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  前週
+                </button>
+                <button
+                  onClick={() => setCurrentWeek(Math.min(weekEvents.length - 1, currentWeek + 1))}
+                  disabled={currentWeek === weekEvents.length - 1}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  翌週へ
+                </button>
+              </div>
             </div>
-            <div className="space-y-2">
-              {economicCalendar.TODAY.map((event, index) => (
-                <div key={index} className="py-2 border-b border-[#3A3A3A] last:border-b-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-3">
-                      <div className="text-sm font-mono text-[#8A7A6A] w-12">{event.time}</div>
-                      <div className="text-sm font-semibold text-[#D4B08C] w-8">{event.country}</div>
-                      <div className="text-sm text-[#D4B08C]">{event.event}</div>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      event.importance === "HIGH" ? "bg-red-600 text-white" :
-                      event.importance === "MEDIUM" ? "bg-yellow-600 text-black" :
-                      "bg-[#4A4A4A] text-[#8A7A6A]"
-                    }`}>{event.importance.charAt(0)}</span>
-                  </div>
+
+            <div className="grid grid-cols-5 gap-2">
+              {weekEvents[currentWeek].days.map((day, index) => (
+                <div key={index} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2">
+                  ...
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* WEEK */}
-        {calendarView === "WEEK" && (
-          <div className="grid grid-cols-5 gap-2">
-            {weeklyCalendar[currentWeek].days.map((day, index) => (
-              <div key={index} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2">
-                <div className="text-center mb-2">
-                  <div className="text-xs font-semibold text-[#D4B08C]">{day.day}</div>
-                  <div className="text-xs text-[#8A7A6A]">{day.date}</div>
-                </div>
-                <div className="space-y-1">
-                  {day.events.map((event, i) => (
-                    <div key={i} className="text-xs text-[#D4B08C]">{event.time} {event.event}</div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* MONTH */}
-        {calendarView === "MONTH" && (
-          <div className="space-y-2">
-            {monthlyCalendar[currentMonth].weeks.map((week, weekIndex) => (
+        {calendarView === "MONTH" && monthEvents.length > 0 && monthEvents[currentMonth]?.weeks && (
+          <div>
+            {monthEvents[currentMonth].weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="grid grid-cols-5 gap-2">
                 {week.map((day, dayIndex) => (
                   <div key={dayIndex} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-20">
-                    <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
-                    <div className="space-y-1">
-                      {day.events.map((event, i) => (
-                        <div key={i} className="text-xs text-[#D4B08C]">{event.event}</div>
-                      ))}
-                    </div>
+                    ...
                   </div>
                 ))}
               </div>
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
-};
+              </div>
+            </div>
+          );
+        };
 
 export default EconomicCalendar;

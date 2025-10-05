@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# fetch_economic_calendar_today_with_status.py
+# fetch_economic_calendar_today_with_status_and_importance.py
 from playwright.sync_api import sync_playwright
 from datetime import datetime, date
 from dotenv import load_dotenv
@@ -21,9 +21,6 @@ DB_PARAMS = {
 
 ECONOMIC_CALENDAR_URL = "https://www.investing.com/economic-calendar/"
 
-# --------------------------
-# ユーティリティ
-# --------------------------
 def _clean(val):
     if val is None:
         return None
@@ -32,9 +29,6 @@ def _clean(val):
         return None
     return v
 
-# --------------------------
-# PlaywrightでTodayの経済指標を取得
-# --------------------------
 def fetch_economic_calendar_today():
     events = []
     with sync_playwright() as p:
@@ -43,7 +37,6 @@ def fetch_economic_calendar_today():
         page.set_extra_http_headers({"Accept-Language": "en-US,en;q=0.9"})
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        # ページ移動
         page.goto(ECONOMIC_CALENDAR_URL, timeout=180000)
 
         # Todayタブをクリック
@@ -52,7 +45,6 @@ def fetch_economic_calendar_today():
             today_tab.click()
             page.wait_for_timeout(3000)  # JS描画待機
 
-        # 経済指標行を取得
         rows = page.query_selector_all("tr.js-event-item")
         for row in rows:
             try:
@@ -62,6 +54,7 @@ def fetch_economic_calendar_today():
                 forecast = _clean(row.query_selector("td.fore").inner_text()) if row.query_selector("td.fore") else None
                 previous = _clean(row.query_selector("td.prev").inner_text()) if row.query_selector("td.prev") else None
 
+                # datetime
                 dt_attr = row.get_attribute("data-event-datetime")
                 if dt_attr:
                     dt = datetime.strptime(dt_attr, "%Y/%m/%d %H:%M:%S")
@@ -70,8 +63,16 @@ def fetch_economic_calendar_today():
                     t = datetime.strptime(time_text, "%H:%M").time()
                     dt = datetime.combine(date.today(), t)
 
-                # status判定
+                # status
                 status = "結果あり" if actual else "未発表"
+
+                # importance
+                importance_cell = row.query_selector("td.sentiment")
+                if importance_cell:
+                    img_key = importance_cell.get_attribute("data-img_key")  # bull1 / bull2 / bull3
+                    importance = {"bull1": "LOW", "bull2": "MEDIUM", "bull3": "HIGH"}.get(img_key, None)
+                else:
+                    importance = None
 
                 events.append({
                     "event_datetime": dt,
@@ -81,6 +82,7 @@ def fetch_economic_calendar_today():
                     "forecast_value": forecast,
                     "previous_value": previous,
                     "status": status,
+                    "importance": importance
                 })
             except Exception as e:
                 print("行解析エラー:", e)
@@ -89,9 +91,6 @@ def fetch_economic_calendar_today():
         browser.close()
     return events
 
-# --------------------------
-# DB保存（重複防止＋更新対応）
-# --------------------------
 def save_calendar_to_db(events):
     if not events:
         print("保存対象データなし")
@@ -106,8 +105,8 @@ def save_calendar_to_db(events):
                 INSERT INTO economic_calendar
                 (event_datetime, country_code, indicator_name,
                  actual_value, forecast_value, previous_value,
-                 status, last_updated)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,NOW())
+                 status, importance, last_updated)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NOW())
                 ON CONFLICT (event_datetime, indicator_name)
                 DO UPDATE SET
                   actual_value = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
@@ -117,11 +116,12 @@ def save_calendar_to_db(events):
                               WHEN COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value) IS NOT NULL THEN '結果あり'
                               ELSE '未発表'
                            END,
+                  importance = EXCLUDED.importance,
                   last_updated = NOW()
             """, (
                 e["event_datetime"], e["country_code"], e["indicator_name"],
                 e["actual_value"], e["forecast_value"], e["previous_value"],
-                e["status"]
+                e["status"], e["importance"]
             ))
             inserted += 1
         except Exception as ex:
@@ -133,9 +133,6 @@ def save_calendar_to_db(events):
     conn.close()
     print(f"{inserted} 件の経済カレンダーを保存しました")
 
-# --------------------------
-# 実行
-# --------------------------
 if __name__ == "__main__":
     events = fetch_economic_calendar_today()
     print(f"総件数: {len(events)}")

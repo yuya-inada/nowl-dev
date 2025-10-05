@@ -3,11 +3,12 @@ from fastapi import FastAPI, Query, HTTPException
 from contextlib import asynccontextmanager
 from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 import pytz
 from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import calendar
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -452,27 +453,61 @@ async def create_economic_indicator_safe(indicator: EconomicIndicatorIn):
 # --------------------------
 # 経済カレンダー一覧取得 API
 # --------------------------
-@app.get("/economic-calendar")
-async def get_economic_calendar(limit: int = 50):
+# --- 省略: database接続設定 ---
+
+@app.get("/economic-calendar/today")
+async def get_calendar_today():
+    today = date.today()
     query = """
         SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value
+               actual_value, forecast_value, previous_value, status
         FROM economic_calendar
+        WHERE DATE(event_datetime) = :today
         ORDER BY event_datetime ASC
-        LIMIT :limit
     """
-    try:
-        rows = await database.fetch_all(query=query, values={"limit": limit})
-        return [
-            {
-                "event_datetime": r["event_datetime"],
-                "country_code": r["country_code"],
-                "indicator_name": r["indicator_name"],
-                "actual_value": r["actual_value"],
-                "forecast_value": r["forecast_value"],
-                "previous_value": r["previous_value"]
-            }
-            for r in rows
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DB取得エラー: {str(e)}")
+    rows = await database.fetch_all(query=query, values={"today": today})
+    return [dict(r) for r in rows]
+
+@app.get("/economic-calendar/week")
+async def get_calendar_week():
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())  # 月曜
+    end_of_week = start_of_week + timedelta(days=6)           # 日曜
+    query = """
+        SELECT event_datetime, country_code, indicator_name,
+               actual_value, forecast_value, previous_value, status
+        FROM economic_calendar
+        WHERE DATE(event_datetime) BETWEEN :start AND :end
+        ORDER BY event_datetime ASC
+    """
+    rows = await database.fetch_all(query=query, values={"start": start_of_week, "end": end_of_week})
+    return [dict(r) for r in rows]
+
+@app.get("/economic-calendar/month")
+async def get_calendar_month():
+    today = date.today()
+    start_of_month = today.replace(day=1)
+    _, last_day = calendar.monthrange(today.year, today.month)
+    end_of_month = today.replace(day=last_day)
+    query = """
+        SELECT event_datetime, country_code, indicator_name,
+               actual_value, forecast_value, previous_value, status
+        FROM economic_calendar
+        WHERE DATE(event_datetime) BETWEEN :start AND :end
+        ORDER BY event_datetime ASC
+    """
+    rows = await database.fetch_all(query=query, values={"start": start_of_month, "end": end_of_month})
+    
+    # 週ごとにまとめる（0:月曜〜6:日曜）
+    weeks = []
+    current_week = []
+    for r in rows:
+        weekday = r["event_datetime"].weekday()
+        if weekday == 0 and current_week:  # 月曜で週切替
+            weeks.append(current_week)
+            current_week = []
+        current_week.append(dict(r))
+    if current_week:
+        weeks.append(current_week)
+
+    return {"weeks": weeks}
