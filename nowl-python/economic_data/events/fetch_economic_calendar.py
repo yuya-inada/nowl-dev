@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# fetch_economic_calendar_today_with_status_and_importance.py
+# fetch_economic_calendar_today_and_yesterday.py
+
 from playwright.sync_api import sync_playwright
 from datetime import datetime, date
 from dotenv import load_dotenv
@@ -21,6 +22,9 @@ DB_PARAMS = {
 
 ECONOMIC_CALENDAR_URL = "https://www.investing.com/economic-calendar/"
 
+# --------------------------
+# 共通クリーンアップ関数
+# --------------------------
 def _clean(val):
     if val is None:
         return None
@@ -29,7 +33,11 @@ def _clean(val):
         return None
     return v
 
-def fetch_economic_calendar_today():
+
+# --------------------------
+# ページからイベント取得
+# --------------------------
+def fetch_economic_calendar_by_tab(tab_id: str):
     events = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--window-size=1920,1080"])
@@ -37,14 +45,20 @@ def fetch_economic_calendar_today():
         page.set_extra_http_headers({"Accept-Language": "en-US,en;q=0.9"})
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+        print(f"📅 {tab_id} 取得中...")
         page.goto(ECONOMIC_CALENDAR_URL, timeout=180000)
 
-        # Todayタブをクリック
-        today_tab = page.query_selector("a#timeFrame_today")
-        if today_tab:
-            today_tab.click()
+        # 対象タブクリック
+        tab = page.query_selector(f"a#{tab_id}")
+        if tab:
+            tab.click()
             page.wait_for_timeout(3000)  # JS描画待機
+        else:
+            print(f"❌ {tab_id} が見つかりません")
+            browser.close()
+            return []
 
+        # 経済指標行を取得
         rows = page.query_selector_all("tr.js-event-item")
         for row in rows:
             try:
@@ -54,7 +68,6 @@ def fetch_economic_calendar_today():
                 forecast = _clean(row.query_selector("td.fore").inner_text()) if row.query_selector("td.fore") else None
                 previous = _clean(row.query_selector("td.prev").inner_text()) if row.query_selector("td.prev") else None
 
-                # datetime
                 dt_attr = row.get_attribute("data-event-datetime")
                 if dt_attr:
                     dt = datetime.strptime(dt_attr, "%Y/%m/%d %H:%M:%S")
@@ -63,13 +76,12 @@ def fetch_economic_calendar_today():
                     t = datetime.strptime(time_text, "%H:%M").time()
                     dt = datetime.combine(date.today(), t)
 
-                # status
                 status = "結果あり" if actual else "未発表"
 
-                # importance
+                # 重要度判定
                 importance_cell = row.query_selector("td.sentiment")
                 if importance_cell:
-                    img_key = importance_cell.get_attribute("data-img_key")  # bull1 / bull2 / bull3
+                    img_key = importance_cell.get_attribute("data-img_key")
                     importance = {"bull1": "LOW", "bull2": "MEDIUM", "bull3": "HIGH"}.get(img_key, None)
                 else:
                     importance = None
@@ -82,7 +94,7 @@ def fetch_economic_calendar_today():
                     "forecast_value": forecast,
                     "previous_value": previous,
                     "status": status,
-                    "importance": importance
+                    "importance": importance,
                 })
             except Exception as e:
                 print("行解析エラー:", e)
@@ -91,6 +103,10 @@ def fetch_economic_calendar_today():
         browser.close()
     return events
 
+
+# --------------------------
+# DB保存（重複防止＋更新対応）
+# --------------------------
 def save_calendar_to_db(events):
     if not events:
         print("保存対象データなし")
@@ -131,11 +147,19 @@ def save_calendar_to_db(events):
     conn.commit()
     cur.close()
     conn.close()
-    print(f"{inserted} 件の経済カレンダーを保存しました")
+    print(f"✅ {inserted} 件の経済カレンダーを保存しました")
 
+
+# --------------------------
+# 実行部分（昨日＋今日）
+# --------------------------
 if __name__ == "__main__":
-    events = fetch_economic_calendar_today()
-    print(f"総件数: {len(events)}")
-    for e in events[:50]:
-        print(e)
-    save_calendar_to_db(events)
+    all_events = []
+
+    for tab in ["timeFrame_yesterday", "timeFrame_today"]:
+        events = fetch_economic_calendar_by_tab(tab)
+        print(f"{tab} → {len(events)} 件")
+        all_events.extend(events)
+
+    print(f"合計: {len(all_events)} 件をDB保存")
+    save_calendar_to_db(all_events)
