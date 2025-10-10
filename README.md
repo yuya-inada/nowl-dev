@@ -97,9 +97,9 @@ and sends them to the Nowl database through the FastAPI backend.
    ```
 
 3. **昼休み・重複除外 / Remove Midday Breaks**
-	•	日本市場の11:30〜12:30を除外
+-	日本市場の11:30〜12:30を除外
 4. **重複チェック / Prevent Duplicates**
-	•	FastAPIの /market-index-candles/latest で最新時刻を取得し、差分のみ送信
+-	FastAPIの /market-index-candles/latest で最新時刻を取得し、差分のみ送信
 5. **API送信 / Send to API**
 ```
   payload = {
@@ -114,6 +114,7 @@ and sends them to the Nowl database through the FastAPI backend.
 }
 requests.post(URL_POST, json=payload)
 ```
+---
 
 ### 🕐 実行方法 / How to Run
 
@@ -127,14 +128,14 @@ python fetch_market_data_full.py --start-date 2025-10-07
 python fetch_market_data_full.py --start-date 2025-09-01 --end-date 2025-09-05
 ```
 
-## 📉 CME先物データ取得 ② / CME Futures Collector ②
+### 📉 CME先物データ取得 ② / CME Futures Collector ②
 
 **ファイル:**  
 `nowl-python/fetch_cme_futures_full.py`
 
 ---
 
-**🧠 概要 / Overview**
+### 🧠 概要 / Overview**
 このモジュールは、CME（シカゴ・マーカンタイル取引所）の先物データ（例：日経平均先物など）を
 自動的に取得し、Nowl のデータベースに送信します。
 1分足データが利用できない場合は日足を自動的に使用します。
@@ -145,7 +146,7 @@ If minute-level data are unavailable, it falls back to daily candles.
 
 ---
 
-## 🔧 主な仕様 / Specifications
+### 🔧 主な仕様 / Specifications
 
 | 項目 / Item | 内容 / Description |
 |-------------|--------------------|
@@ -157,8 +158,9 @@ If minute-level data are unavailable, it falls back to daily candles.
 | **最新データ取得 / Latest API** | `GET /market-index-candles/latest`（重複防止） |
 | **リトライ回数 / Retry Limit** | 3回（送信失敗時） |
 
+---
 
-## ⚙️ 主な処理フロー / Processing Flow
+### ⚙️ 主な処理フロー / Processing Flow
 
 1. **対象銘柄の定義 / Define Futures List**
 ```
@@ -202,7 +204,9 @@ send_candle(payload)
 - JSON形式でFastAPIに送信
 - ステータス200が返らない場合は3回までリトライ
 
-## 🕐 実行方法 / How to Run
+---
+
+### 🕐 実行方法 / How to Run
 指定なし（直近データ取得）
 ```
 python fetch_cme_futures_full.py
@@ -212,7 +216,9 @@ python fetch_cme_futures_full.py
 python fetch_cme_futures_full.py 2025-09-08
 ```
 
-## 🗃️ 出力データ例 / Example Payload
+---
+
+### 🗃️ 出力データ例 / Example Payload
 ```
 {
   "symbol": "NKD=F",
@@ -231,8 +237,9 @@ python fetch_cme_futures_full.py 2025-09-08
 このモジュールは既存の fetch_market_data_full.py と連携し、
 Nowl の市場データをグローバルに拡張するための仕組みです。
 
+---
 
-## 📈 経済指標データ取得 / Economic Calendar Scraper
+### 📈 経済指標データ取得 / Economic Calendar Scraper
 
 **ファイル名 / Filename:**  
 `fetch_economic_calendar.py`
