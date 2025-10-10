@@ -233,9 +233,11 @@ python fetch_cme_futures_full.py 2025-09-08
 }
 ```
 
-**📘 補足 / Notes:**
-このモジュールは既存の fetch_market_data_full.py と連携し、
-Nowl の市場データをグローバルに拡張するための仕組みです。
+### 🔁 今後の拡張 / Future Enhancements
+-	他のCME銘柄（例：S&P500、NASDAQ先物など）の追加
+-	取引時間外データの除外フィルタ
+-	自動スケジューリング（cron / Airflow / Prefect）対応
+-	取引ボリュームと指数の相関分析（AI分析連携）
 
 ---
 
@@ -332,6 +334,144 @@ The data will serve as a macroeconomic indicator for AI-driven portfolio logic a
 
 ---
 
+### 🔁 今後の拡張 / Future Enhancements
+-	他のFRED系列（例：CPI, PCE, T10Y2Y）も追加取得予定
+-	PostgreSQL連携（自動アップロード）
+-	定期自動更新（cron / Airflow / Prefect対応）
+
+---
+
+
+## 💹 実質金利算出モジュール / Real Interest Rate Calculator
+
+**ファイル名 / Filename:** 
+`nowl-python/calc_real_tate_csv.py`
+
+### 🧠 概要 / Overview
+
+このモジュールは、
+-	米国10年国債利回り（^TNX）
+-	10年期待インフレ率（T10YIE）
+を取得し、「実質金利（＝名目金利 − 期待インフレ率）」を自動算出・送信します。
+
+This module calculates and uploads the Real 10-Year Interest Rate,
+derived from the U.S. Treasury Yield (^TNX) and the 10-Year Breakeven Inflation Rate (T10YIE).
+
+---
+
+### 🔧 主な仕様 / Specifications
+
+| 項目 / Item | 内容 / Description |
+|-------------|--------------------|
+| **データソース / Data Source** | Yahoo Finance (^TNX) + FRED CSV (T10YIE_all.csv) |
+| **出力先 / Output Destination** | FastAPI (POST /market-index-candles) |
+| **指標 / Indicators** | - 米長期金利（Nominal 10Y）- 10年期待インフレ率（T10YIE）- 実質金利（Real Rate） |
+| **出力形式 / Output Format** | FastAPI POST JSON Payload |
+| **タイムゾーン / Timezone** | JST（UTC → JST 変換） |
+| **重複防止 / Duplicate Prevention** | FastAPI に対して日付＋シンボルでチェック |
+
+---
+
+### ⚙️ 主な処理フロー / Processing Flow
+
+1. **米長期金利データ取得 / Fetch U.S. 10Y Treasury Yield**
+```
+import yfinance as yf
+data = yf.Ticker("^TNX").history(start="2025-10-01", end="2025-10-02", interval="1d")
+```
+ → JST変換・ソート・重複排除を実施。
+
+2. **10年期待インフレ率データ取得 / Fetch T10YIE from CSV**
+```
+df = pd.read_csv("T10YIE_all.csv", parse_dates=["date"])
+df.index = df.index.tz_localize("UTC").tz_convert(JST)
+day_df = df.loc[target_date.strftime("%Y-%m-%d") : target_date.strftime("%Y-%m-%d")]
+```
+
+3. **実質金利の算出 / Calculate Real Rate**
+```
+real_rate = tnx_close - t10yie_close
+```
+
+4. **送信処理 / Send to FastAPI**
+```
+payload = {
+    "symbol": "REAL_RATE",
+    "marketType": "実質金利",
+    "timestamp": target_date.strftime("%Y-%m-%dT%H:%M:%S"),
+    "open": real_rate,
+    "high": real_rate,
+    "low": real_rate,
+    "close": real_rate,
+    "volume": 0
+}
+requests.post(URL_POST, json=payload)
+```
+
+5. **重複チェック / Prevent Duplicates**
+```
+check_resp = requests.get(URL_CHECK, params={"symbol": payload["symbol"], "date": date_str})
+if existing and len(existing) > 0:
+    print("既に存在 → スキップ")
+```
+
+---
+
+### 🕐 実行方法 / How to Run
+
+単日実行 / Single Day
+```
+python calc_real_tate_csv.py --start-date 2025-10-08
+```
+
+範囲指定 / Range Execution
+```
+python calc_real_tate_csv.py --start-date 2025-10-01 --end-date 2025-10-09
+```
+
+---
+
+### 🗃️ 出力例 / Example Output (FastAPI Payload)
+```
+{
+  "symbol": "REAL_RATE",
+  "marketType": "実質金利",
+  "timestamp": "2025-10-08T00:00:00",
+  "open": 2.03,
+  "high": 2.03,
+  "low": 2.03,
+  "close": 2.03,
+  "volume": 0
+}
+```
+
+---
+
+### 🧩 関連ファイル / Related Files
+
+| ファイル名 / File | 役割 / Description |
+|-------------|--------------------|
+| fetch_t10yie_all.py| 10年期待インフレ率（T10YIE）を取得・CSV保存 |
+| calc_real_tate_csv.py | 実質金利を計算・送信 |
+| fetch_market_data_full.py | 株価・指数データ取得（Nowl共通基盤） |
+
+---
+
+### 🧠 分析活用 / Analytical Use
+
+- インフレ期待の動向と実質金利の差から投資環境のリスク評価を実施
+-	金利・物価の乖離をAIエンジンの特徴量として学習利用
+-	将来的にはNowlの**資産配分提案（ポートフォリオ最適化）**に連携予定
+
+---
+
+### 🔁 今後の拡張 / Future Enhancements
+-	週次または日次自動実行（cron / Airflow対応）
+-	実質短期金利（2Y / 5Y）への拡張
+-	FREDからのT10YIE自動更新との統合
+
+---
+
 
 ## 📈 経済指標データ取得 / Economic Calendar Scraper
 
@@ -385,9 +525,9 @@ and stores them in PostgreSQL for AI analysis and UI display.
 The script will be automated via **cron** or **Airflow / Prefect**,  
 executed once per day (e.g., 8:00 JST).
 
-これにより、Nowl の経済カレンダー画面は常に最新情報を反映し、  
+これにより、Nowl の経済カレンダー画面等は常に最新情報を反映し、  
 AI分析も最新の経済状況を元に実行されるようになります。  
-This ensures Nowl’s economic calendar and AI models always use up-to-date data.
+This ensures Nowl’s economic calendar etc and AI models always use up-to-date data.
 
 ---
 
