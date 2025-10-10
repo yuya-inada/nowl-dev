@@ -239,6 +239,88 @@ Nowl の市場データをグローバルに拡張するための仕組みです
 
 ---
 
+## 🪙 米国10年期待インフレ率データ取得 / U.S. 10-Year Breakeven Inflation Rate Collector
+
+**ファイル名 / Filename:**
+`nowl-python/fetch_t10yie_all.py`
+---
+### 🧠 概要 / Overview
+このモジュールは、FRED（Federal Reserve Economic Data）から
+米国10年物ブレークイーブン・インフレ率（T10YIE）の全期間データを取得し、
+CSVファイルとしてローカルに保存します。
+
+This module fetches the 10-Year Breakeven Inflation Rate (T10YIE)
+from the Federal Reserve Economic Data (FRED) API and stores the full historical data as a local CSV file.
+---
+###🔧 主な仕様 / Specifications
+| 項目 / Item | 内容 / Description |
+|-------------|--------------------|
+| **データソース / Data Source** | FRED API |
+| **シリーズID / Series ID** | T10YIE |
+| **取得期間 / Data Range** | 1990年1月1日 ～ 現在 / Jan 1, 1990 – Present |
+| **出力形式 / Output Format** | CSV（T10YIE_all.csv） |
+| **タイムゾーン / Timezone** | JST（UTC → JST 変換） |
+| **APIキー / API Key** | .env ファイルから FRED_API_KEY を読み込み |
+---
+### ⚙️ 主な処理フロー / Processing Flow
+1. **環境変数の読み込み / Load Environment Variables**
+```
+from dotenv import load_dotenv
+load_dotenv()
+FRED_API_KEY = os.getenv("FRED_API_KEY")
+```
+2. **APIリクエスト生成 / Build FRED API Request**
+```
+url = "https://api.stlouisfed.org/fred/series/observations"
+params = {
+    "series_id": "T10YIE",
+    "api_key": FRED_API_KEY,
+    "file_type": "json",
+    "observation_start": "1990-01-01",
+    "observation_end": datetime.today().strftime("%Y-%m-%d"),
+}
+```
+3. **データ取得と整形 / Fetch & Clean Data**
+```
+response = requests.get(url, params=params)
+data_json = response.json().get("observations", [])
+df = pd.DataFrame(data_json)
+df["date"] = pd.to_datetime(df["date"])
+df.set_index("date", inplace=True)
+df.index = df.index.tz_localize("UTC").tz_convert(JST)
+df["value"] = pd.to_numeric(df["value"], errors="coerce")
+df = df.rename(columns={"value": "Close"}).sort_index()
+```
+4. **CSV保存 / Save to CSV**
+```
+df.to_csv("T10YIE_all.csv")
+print(f"CSVに保存しました: {len(df)} 行")
+```
+---
+### 🕐 実行方法 / How to Run
+```
+python fetch_t10yie_all.py
+```
+---
+### 🗃️ 出力例 / Example Output (T10YIE_all.csv)
+| date | Close |
+|-------------|--------------------|
+| 1990-01-02 | 3.97 |
+| 1990-01-03 | 3.96 |
+| … | … |
+| 2025-10-09 | 2.15 |
+---
+### 🧩 利用用途 / Usage in Nowl
+取得したT10YIEデータは、
+-	米国の長期的なインフレ期待の把握
+- 金利動向・資産配分ロジックの補助変数
+- 経済分析モジュール（nowl-engine）での回帰モデル入力
+などに活用予定。
+
+The data will serve as a macroeconomic indicator for AI-driven portfolio logic and inflation analysis within Nowl.
+---
+
+
 ## 📈 経済指標データ取得 / Economic Calendar Scraper
 
 **ファイル名 / Filename:**  
@@ -301,7 +383,7 @@ This ensures Nowl’s economic calendar and AI models always use up-to-date data
 - 政策金利・要人発言データの追加  
   → Add central bank rates & key figure comments
 - 自動スケジューリング（cron / Airflow / Prefect）対応
-  ➡︎Automated scheduling (cron / Airflow / Prefect) response
+  → Automated scheduling (cron / Airflow / Prefect) response
 - 経済指標 × 市場反応のAI分析連携  
   → Correlation analysis between indicators and market reactions 
 - 自動取引エンジンとの統合
