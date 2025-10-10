@@ -245,8 +245,7 @@ Nowl の市場データをグローバルに拡張するための仕組みです
 `fetch_economic_calendar.py`
 
 **目的 / Purpose:**  
-経済指標カレンダー（Investing.com）から当日
-- 前日のデータを自動取得し、PostgreSQL に格納。AI分析やUI表示の基礎データとして活用。  
+- 経済指標カレンダー（Investing.com）から当日・前日のデータを自動取得し、PostgreSQL に格納。AI分析やUI表示の基礎データとして活用。  
 Automatically fetches daily and previous-day economic indicators from *Investing.com*  
 and stores them in PostgreSQL for AI analysis and UI display.
 
