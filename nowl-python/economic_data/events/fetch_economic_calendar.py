@@ -46,7 +46,7 @@ def fetch_economic_calendar_by_tab(tab_id: str):
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
         print(f"📅 {tab_id} 取得中...")
-        page.goto(ECONOMIC_CALENDAR_URL, timeout=180000)
+        page.goto(ECONOMIC_CALENDAR_URL, timeout=180000, wait_until="domcontentloaded")
 
         # 対象タブクリック
         tab = page.query_selector(f"a#{tab_id}")
@@ -100,7 +100,7 @@ def fetch_economic_calendar_by_tab(tab_id: str):
                 print("行解析エラー:", e)
                 continue
 
-        browser.close()
+        browser = p.chromium.launch(headless=False, slow_mo=100)
     return events
 
 
