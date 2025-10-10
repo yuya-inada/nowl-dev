@@ -256,7 +256,7 @@ from the Federal Reserve Economic Data (FRED) API and stores the full historical
 
 ---
 
-###🔧 主な仕様 / Specifications
+### 🔧 主な仕様 / Specifications
 | 項目 / Item | 内容 / Description |
 |-------------|--------------------|
 | **データソース / Data Source** | FRED API |
