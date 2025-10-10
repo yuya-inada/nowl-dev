@@ -128,7 +128,7 @@ python fetch_market_data_full.py --start-date 2025-10-07
 python fetch_market_data_full.py --start-date 2025-09-01 --end-date 2025-09-05
 ```
 
-### 📉 CME先物データ取得 ② / CME Futures Collector ②
+## 📉 CME先物データ取得 ② / CME Futures Collector ②
 
 **ファイル:**  
 `nowl-python/fetch_cme_futures_full.py`
@@ -239,7 +239,7 @@ Nowl の市場データをグローバルに拡張するための仕組みです
 
 ---
 
-### 📈 経済指標データ取得 / Economic Calendar Scraper
+## 📈 経済指標データ取得 / Economic Calendar Scraper
 
 **ファイル名 / Filename:**  
 `fetch_economic_calendar.py`
@@ -286,7 +286,7 @@ and stores them in PostgreSQL for AI analysis and UI display.
 
 ---
 
-## 🔁 自動実行（予定） / Automation (Planned)
+### 🔁 自動実行（予定） / Automation (Planned)
 このスクリプトは将来的に **cronジョブ** または **Airflow / Prefect** により  
 1日1回（例：日本時間 8:00）自動実行予定。  
 The script will be automated via **cron** or **Airflow / Prefect**,  
