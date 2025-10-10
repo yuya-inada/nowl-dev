@@ -243,7 +243,9 @@ Nowl の市場データをグローバルに拡張するための仕組みです
 
 **ファイル名 / Filename:**
 `nowl-python/fetch_t10yie_all.py`
+
 ---
+
 ### 🧠 概要 / Overview
 このモジュールは、FRED（Federal Reserve Economic Data）から
 米国10年物ブレークイーブン・インフレ率（T10YIE）の全期間データを取得し、
@@ -251,7 +253,9 @@ CSVファイルとしてローカルに保存します。
 
 This module fetches the 10-Year Breakeven Inflation Rate (T10YIE)
 from the Federal Reserve Economic Data (FRED) API and stores the full historical data as a local CSV file.
+
 ---
+
 ###🔧 主な仕様 / Specifications
 | 項目 / Item | 内容 / Description |
 |-------------|--------------------|
@@ -261,7 +265,9 @@ from the Federal Reserve Economic Data (FRED) API and stores the full historical
 | **出力形式 / Output Format** | CSV（T10YIE_all.csv） |
 | **タイムゾーン / Timezone** | JST（UTC → JST 変換） |
 | **APIキー / API Key** | .env ファイルから FRED_API_KEY を読み込み |
+
 ---
+
 ### ⚙️ 主な処理フロー / Processing Flow
 1. **環境変数の読み込み / Load Environment Variables**
 ```
@@ -296,12 +302,16 @@ df = df.rename(columns={"value": "Close"}).sort_index()
 df.to_csv("T10YIE_all.csv")
 print(f"CSVに保存しました: {len(df)} 行")
 ```
+
 ---
+
 ### 🕐 実行方法 / How to Run
 ```
 python fetch_t10yie_all.py
 ```
+
 ---
+
 ### 🗃️ 出力例 / Example Output (T10YIE_all.csv)
 | date | Close |
 |-------------|--------------------|
@@ -309,15 +319,17 @@ python fetch_t10yie_all.py
 | 1990-01-03 | 3.96 |
 | … | … |
 | 2025-10-09 | 2.15 |
+
 ---
+
 ### 🧩 利用用途 / Usage in Nowl
 取得したT10YIEデータは、
 -	米国の長期的なインフレ期待の把握
 - 金利動向・資産配分ロジックの補助変数
 - 経済分析モジュール（nowl-engine）での回帰モデル入力
 などに活用予定。
-
 The data will serve as a macroeconomic indicator for AI-driven portfolio logic and inflation analysis within Nowl.
+
 ---
 
 
