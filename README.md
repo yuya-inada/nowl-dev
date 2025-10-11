@@ -531,7 +531,7 @@ This ensures Nowl’s economic calendar etc and AI models always use up-to-date 
 
 ---
 
-## 🧠 次ステップ / Next Steps 
+### 🧠 次ステップ / Next Steps 
 - 政策金利・要人発言データの追加  
   → Add central bank rates & key figure comments
 - 自動スケジューリング（cron / Airflow / Prefect）対応
@@ -542,5 +542,110 @@ This ensures Nowl’s economic calendar etc and AI models always use up-to-date 
   → Integrate with automated trading engine
 
 ---
+
+## 🏛️ FOMCイベントデータ取得 / FOMC Event Scraper
+
+**ファイル名 / Filename:**
+`nowl-python/economic_data/events/fetch_fomc.py`
+
+### 🧠 概要 / Overview
+
+このモジュールは、FRB（米連邦準備制度理事会） の公式サイトから
+FOMC（Federal Open Market Committee）の開催日程および関連資料（PDF・会見URLなど）を自動取得し、
+PostgreSQLの economic_events テーブルに保存します。
+
+This module automatically scrapes the official Federal Reserve website to retrieve
+the schedule and materials (PDFs, press conferences, etc.) of each FOMC meeting,
+and stores the data into the economic_events table in PostgreSQL.
+
+---
+
+### 🔧 主な仕様 / Specifications
+
+| 項目 / Item | 内容 / Description |
+|-------------|--------------------|
+| **データソース / Data Source** | Federal Reserve - FOMC Calendars |
+| **保存先 / Storage** | PostgreSQL (economic_events table) |
+| **主要ライブラリ / Libraries** | requests, BeautifulSoup4, pdfplumber, psycopg2 |
+| **抽出対象 / Target Data** | 開催日・各種資料URL（声明文PDF・議事要旨PDF・会見・経済見通し）など |
+| **PDFテキスト抽出 / PDF Text Extraction** | pdfplumber を使用して声明文PDFから全文テキストを抽出 |
+
+---
+
+### ⚙️ 主な処理フロー / Processing Flow
+
+1. **FOMCページへアクセス / Access FOMC Calendar Page**
+https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm にアクセスしてHTMLを取得。
+
+2. **年ごとの会合を抽出 / Parse Yearly Panels**
+各年度ごとの <div class="panel panel-default"> からFOMCスケジュールを解析。
+
+3. **会合ごとの詳細取得 / Extract Meeting Details**
+	-	開催年月日（例：2025年7月30日）
+	-	各資料リンク（声明文・議事録・会見・経済見通し）
+	-	各リンクのPDFやHTMLを取得
+
+4. **声明文PDFのテキスト抽出 / Extract Text from Statement PDF**
+```
+with pdfplumber.open(BytesIO(r.content)) as pdf:
+    for page in pdf.pages:
+        text_content += page.extract_text() + "\n"
+```
+
+5. **PostgreSQLへ保存（Upsert対応） / Save to PostgreSQL**
+	-	新規データは挿入（INSERT）
+	-	既存データは更新（UPDATE）
+	-	既に text_extracted = True の行は再抽出をスキップ
+
+---
+
+### 🗃️ 関連テーブル / Related Table
+
+Table: economic_events
+
+| カラム名 / Column | 説明 / Description |
+|-------------------|--------------------|
+| event_date | 会合日 / Meeting date |
+| country_code | 国コード（常にUS） / Country code |
+| event_name | イベント名（例：FOMC） / Event name |
+| statement_pdf_url | 声明文PDF URL / Statement PDF |
+| press_conf_url |記者会見URL / Press conference URL |
+| minutes_pdf_url | 議事要旨PDF URL / Minutes PDF|
+| projection_pdf_url | 経済見通しPDF URL / Projection materials |
+| text_content | 声明文の抽出テキスト / Extracted statement text |
+| description | 資料概要（Statement, Minutesなど） / Description of files |
+| text_extracted | テキスト抽出済みかどうか / Flag for text extraction |
+
+---
+
+### 🕐 実行方法 / How to Run
+```
+# FOMCイベントを全件取得してDBに保存
+python fetch_fomc.py
+```
+実行後、コンソールに以下のように出力されます：
+```
+Statement PDF取得成功: 2025年7月31日
+3 件のFOMCイベントを保存しました
+```
+
+---
+
+### 🔁 自動実行（予定） / Automation (Planned)
+
+- 将来的に cronジョブ または Airflow により、
+   → 週1回（月曜 8:00 JST） 自動で更新予定。
+This scraper will be automated via cron or Airflow,
+scheduled weekly (e.g., every Monday at 8:00 JST).
+
+- 抽出テキストの自然言語処理（NLP）解析
+   → Sentiment / Topic / Policy stance の分類
+-	FOMC議事録と市場反応（ドル円・S&P500）の相関分析
+   → Correlation between FOMC tone and market movement
+-	Nowlダッシュボードへの要約表示
+   → Summary display in Nowl’s macro insight section
+
+---
+
 
 © 2025 Owlione / Nowl Project
