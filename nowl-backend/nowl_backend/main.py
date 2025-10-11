@@ -451,63 +451,107 @@ async def create_economic_indicator_safe(indicator: EconomicIndicatorIn):
         raise HTTPException(status_code=500, detail=f"DB INSERT エラー: {e}")
 
 # --------------------------
-# 経済カレンダー一覧取得 API
+# 今日の経済カレンダー
 # --------------------------
-# --- 省略: database接続設定 ---
+@app.get("/economic-calendar/day")
+async def get_calendar_day(date: str = Query(None, description="YYYY-MM-DD")):
+    JST = pytz.timezone("Asia/Tokyo")
+    target_date = datetime.strptime(date, "%Y-%m-%d").date() if date else datetime.now(JST).date()
 
-@app.get("/economic-calendar/today")
-async def get_calendar_today():
-    today = date.today()
     query = """
         SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value, status
+               actual_value, forecast_value, previous_value,
+               status, importance
         FROM economic_calendar
-        WHERE DATE(event_datetime) = :today
+        WHERE DATE(event_datetime) = :target_date
         ORDER BY event_datetime ASC
     """
-    rows = await database.fetch_all(query=query, values={"today": today})
-    return [dict(r) for r in rows]
+    try:
+        rows = await database.fetch_all(query=query, values={"target_date": target_date})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/economic-calendar/week")
-async def get_calendar_week():
-    today = date.today()
-    start_of_week = today - timedelta(days=today.weekday())  # 月曜
-    end_of_week = start_of_week + timedelta(days=6)           # 日曜
-    query = """
-        SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value, status
-        FROM economic_calendar
-        WHERE DATE(event_datetime) BETWEEN :start AND :end
-        ORDER BY event_datetime ASC
-    """
-    rows = await database.fetch_all(query=query, values={"start": start_of_week, "end": end_of_week})
-    return [dict(r) for r in rows]
-
-@app.get("/economic-calendar/month")
-async def get_calendar_month():
-    today = date.today()
-    start_of_month = today.replace(day=1)
-    _, last_day = calendar.monthrange(today.year, today.month)
-    end_of_month = today.replace(day=last_day)
-    query = """
-        SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value, status
-        FROM economic_calendar
-        WHERE DATE(event_datetime) BETWEEN :start AND :end
-        ORDER BY event_datetime ASC
-    """
-    rows = await database.fetch_all(query=query, values={"start": start_of_month, "end": end_of_month})
-    
-    # 週ごとにまとめる（0:月曜〜6:日曜）
-    weeks = []
-    current_week = []
+    events = []
     for r in rows:
-        weekday = r["event_datetime"].weekday()
-        if weekday == 0 and current_week:  # 月曜で週切替
-            weeks.append(current_week)
-            current_week = []
-        current_week.append(dict(r))
-    if current_week:
-        weeks.append(current_week)
+        r_dict = dict(r)  # ← Record を dict に変換
+        dt = r_dict["event_datetime"]
+        events.append({
+            "event_datetime": dt.isoformat() if dt else None,
+            "country_code": r_dict["country_code"],
+            "indicator_name": r_dict["indicator_name"],
+            "actual_value": r_dict["actual_value"],
+            "forecast_value": r_dict["forecast_value"],
+            "previous_value": r_dict["previous_value"],
+            "status": r_dict.get("status"),      # dict なので get が使える
+            "importance": r_dict.get("importance")
+        })
 
-    return {"weeks": weeks}
+    return {
+        "date": target_date.isoformat(),
+        "weekday": target_date.strftime("%A"),
+        "events": events
+    }
+
+
+
+# --------------------------
+# 週間単位の経済カレンダー
+# --------------------------
+@app.get("/economic-calendar/week")
+async def get_economic_calendar_week(date: str = Query(None, description="基準日 (YYYY-MM-DD)")):
+    JST = pytz.timezone("Asia/Tokyo")
+    try:
+        base_date = datetime.strptime(date, "%Y-%m-%d").date() if date else datetime.now(JST).date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    # 月曜始まりで週の範囲を決定
+    start_of_week = base_date - timedelta(days=base_date.weekday())  # 月曜
+    end_of_week = start_of_week + timedelta(days=4)  # 金曜まで表示（平日想定）
+
+    query = """
+        SELECT event_datetime, country_code, indicator_name,
+               actual_value, forecast_value, previous_value,
+               status, importance
+        FROM economic_calendar
+        WHERE DATE(event_datetime) BETWEEN :start_date AND :end_date
+        ORDER BY event_datetime ASC
+    """
+    try:
+        rows = await database.fetch_all(query=query, values={"start_date": start_of_week, "end_date": end_of_week})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # データを曜日ごとにまとめる
+    days_map = {i: [] for i in range(5)}  # 月〜金のみ
+    for r in rows:
+        dt = r["event_datetime"]
+        if not dt:
+            continue
+        weekday = dt.weekday()
+        if weekday < 5:  # 月〜金のみ
+            days_map[weekday].append({
+                "event_datetime": dt.isoformat(),
+                "country_code": r["country_code"],
+                "indicator_name": r["indicator_name"],
+                "actual_value": r["actual_value"],
+                "forecast_value": r["forecast_value"],
+                "previous_value": r["previous_value"],
+                "status": r["status"],
+                "importance": r["importance"]
+            })
+
+    week_data = []
+    for i in range(5):
+        day_date = start_of_week + timedelta(days=i)
+        week_data.append({
+            "date": day_date.strftime("%Y-%m-%d"),
+            "weekday": day_date.strftime("%a"),  # Mon, Tue,...
+            "events": days_map[i]
+        })
+
+    return {
+        "week_start": start_of_week.strftime("%Y-%m-%d"),
+        "week_end": end_of_week.strftime("%Y-%m-%d"),
+        "days": week_data
+    }
