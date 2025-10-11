@@ -4,10 +4,12 @@ Development repository for the asset management AI system **Nowl**
 
 ---
 
-# Nowl（ノウル）  
-AIを活用した、資産運用のパートナーシステム  
-**Nowl** is an AI-powered partner system for financial asset management.
-
+# Nowl（ノウル）
+### 目標 / Goal
+1・ **AIを活用した、資産運用のAIシステム**
+   → AI-powered asset management system.
+2・ **ユーザーの人生を導くライフパートナーシステム**
+   → Life Partner System that Guides Users'Lives.
 ---
 
 ## 🎯 主な目的 / Purpose
@@ -17,6 +19,8 @@ AIを活用した、資産運用のパートナーシステム
   → Automated investment based on budgets and goals  
 - 市場や経済の動きをAIで分析・提案  
   → AI-driven market & economic analysis with investment suggestions
+- 分析や提案の学習機能（市場の動きの理由などの解説）
+  → Learning features for analysis and suggestions (expanation of market movements , etc)
 
 ---
 
@@ -46,7 +50,7 @@ We will update progress logs and UI designs here as development proceeds.
 
 ---
 
-## 📈 株価・指数データ取得 ① / Market Data Collector ①
+# 📈 株価・指数データ取得  / Market Data Collector 
 
 **ファイル:**  
 `nowl-python/fetch_market_data_full.py`
@@ -128,7 +132,7 @@ python fetch_market_data_full.py --start-date 2025-10-07
 python fetch_market_data_full.py --start-date 2025-09-01 --end-date 2025-09-05
 ```
 
-## 📉 CME先物データ取得 ② / CME Futures Collector ②
+# 📉 CME先物データ取得  / CME Futures Collector 
 
 **ファイル:**  
 `nowl-python/fetch_cme_futures_full.py`
@@ -234,14 +238,13 @@ python fetch_cme_futures_full.py 2025-09-08
 ```
 
 ### 🔁 今後の拡張 / Future Enhancements
--	他のCME銘柄（例：S&P500、NASDAQ先物など）の追加
 -	取引時間外データの除外フィルタ
 -	自動スケジューリング（cron / Airflow / Prefect）対応
 -	取引ボリュームと指数の相関分析（AI分析連携）
 
 ---
 
-## 🪙 米国10年期待インフレ率データ取得 / U.S. 10-Year Breakeven Inflation Rate Collector
+# 🪙 米国10年期待インフレ率データ取得 / U.S. 10-Year Breakeven Inflation Rate Collector
 
 **ファイル名 / Filename:**
 `nowl-python/fetch_t10yie_all.py`
@@ -342,7 +345,7 @@ The data will serve as a macroeconomic indicator for AI-driven portfolio logic a
 ---
 
 
-## 💹 実質金利算出モジュール / Real Interest Rate Calculator
+# 💹 実質金利算出モジュール / Real Interest Rate Calculator
 
 **ファイル名 / Filename:** 
 `nowl-python/calc_real_tate_csv.py`
@@ -473,7 +476,7 @@ python calc_real_tate_csv.py --start-date 2025-10-01 --end-date 2025-10-09
 ---
 
 
-## 📈 経済指標データ取得 / Economic Calendar Scraper
+# 📈 経済指標データ取得 / Economic Calendar Scraper
 
 **ファイル名 / Filename:**  
 `fetch_economic_calendar.py`
@@ -543,7 +546,7 @@ This ensures Nowl’s economic calendar etc and AI models always use up-to-date 
 
 ---
 
-## 🏛️ FOMCイベントデータ取得 / FOMC Event Scraper
+# 🏛️ FOMCイベントデータ取得 / FOMC Event Scraper
 
 **ファイル名 / Filename:**
 `nowl-python/economic_data/events/fetch_fomc.py`
