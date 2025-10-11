@@ -10,6 +10,7 @@ Development repository for the asset management AI system **Nowl**
    → AI-powered asset management system.
 2・ **ユーザーの人生を導くライフパートナーシステム**
    → Life Partner System that Guides Users'Lives.
+   
 ---
 
 ## 🎯 主な目的 / Purpose
