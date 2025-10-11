@@ -39,10 +39,10 @@ We will update progress logs and UI designs here as development proceeds.
 
 | モジュール名 / Module | 概要 / Description | 主な技術 / Main Tech |
 |-----------------------|--------------------|----------------------|
-| **nowl-ui** | フロントエンド（UI） | React, Tailwind CSS |
-| **nowl-api** | APIサーバー | FastAPI / Spring Boot |
+| **nowl_frontend** | フロントエンド（UI） | React, Tailwind CSS |
+| **nowl-backend** | APIサーバー | FastAPI / Spring Boot |
 | **nowl-engine** | AI分析・取引ロジック | Python (Scikit-learn, TensorFlow) |
-| **nowl-scraper** | 市場・経済データ収集モジュール | Playwright, PostgreSQL |
+| **nowl-python** | 市場・経済データ収集モジュール | Playwright, PostgreSQL |
 
 ---
 
