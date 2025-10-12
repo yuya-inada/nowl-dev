@@ -77,6 +77,16 @@ def fetch_economic_calendar_by_tab(tab_id: str, base_day: date):  # ← base_day
             browser.close()
             return []
 
+        # 追加読み込み対応
+        previous_count = 0
+        while True:
+            rows = page.query_selector_all("tr.js-event-item")
+            current_count = len(rows)
+            if current_count == previous_count:
+                break
+            previous_count = current_count
+            page.evaluate("window.scrollBy(0, document.body.scrollHeight)")
+            page.wait_for_timeout(2500)  # JS描画待機
         rows = page.query_selector_all("tr.js-event-item")
         for row in rows:
             try:
@@ -98,7 +108,6 @@ def fetch_economic_calendar_by_tab(tab_id: str, base_day: date):  # ← base_day
                         t = datetime.strptime("00:00", "%H:%M").time()
                     dt = datetime.combine(base_day, t)
 
-                # dt_jst = to_jst(dt)
                 status = "結果あり" if actual else "未発表"
 
                 importance_cell = row.query_selector("td.sentiment")
@@ -178,13 +187,20 @@ if __name__ == "__main__":
     today = date.today()
     yesterday = today - timedelta(days=1)
 
+    # 前日 
     events_y = fetch_economic_calendar_by_tab("timeFrame_yesterday", yesterday)
     print(f"timeFrame_yesterday → {len(events_y)} 件")
     all_events.extend(events_y)
 
+    # 今日
     events_t = fetch_economic_calendar_by_tab("timeFrame_today", today)
     print(f"timeFrame_today → {len(events_t)} 件")
     all_events.extend(events_t)
+
+    # 今週
+    events_w = fetch_economic_calendar_by_tab("timeFrame_thisWeek", today)
+    print(f"timeFrame_thisWeek → {len(events_w)} 件")
+    all_events.extend(events_w)
 
     print(f"合計: {len(all_events)} 件をDB保存")
     save_calendar_to_db(all_events)
