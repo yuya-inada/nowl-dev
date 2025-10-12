@@ -387,26 +387,29 @@ const EconomicCalendar = () => {
                       >
                         <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
                         <div className="space-y-1">
-                          {day.events.length > 0 ? (
-                            day.events.slice(0, 2).map((event, eventIndex) => (
-                              <div key={eventIndex} className="flex items-center space-x-1">
-                                <span
-                                  className={`w-1 h-1 rounded-full ${
-                                    event.importance === "HIGH"
-                                      ? "bg-red-500"
-                                      : event.importance === "MEDIUM"
-                                      ? "bg-yellow-500"
-                                      : "bg-gray-500"
-                                  }`}
-                                ></span>
-                                <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
-                              </div>
-                            ))
+                          {day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length > 0 ? (
+                            day.events
+                              .filter(e => e.importance === "HIGH" || e.importance === "MEDIUM")
+                              .slice(0, 2)
+                              .map((event, eventIndex) => (
+                                <div key={eventIndex} className="flex items-center space-x-1">
+                                  <span
+                                    className={`w-1 h-1 rounded-full ${
+                                      event.importance === "HIGH"
+                                        ? "bg-red-500"
+                                        : "bg-yellow-500"
+                                    }`}
+                                  ></span>
+                                  <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
+                                </div>
+                              ))
                           ) : (
                             <div className="text-xs text-[#8A7A6A]">No data</div>
                           )}
-                          {day.events.length > 2 && (
-                            <div className="text-xs text-[#8A7A6A]">+{day.events.length - 2}件</div>
+                          {day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length > 2 && (
+                            <div className="text-xs text-[#8A7A6A]">
+                              +{day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length - 2} more
+                            </div>
                           )}
                         </div>
                       </div>

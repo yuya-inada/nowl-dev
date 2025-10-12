@@ -9,6 +9,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
+from typing import List, Optional, Dict
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -558,33 +559,75 @@ async def get_economic_calendar_week(date: str = Query(None, description="基準
 
 
 @app.get("/economic-calendar/month")
-def get_monthly_calendar(year: int = Query(...), month: int = Query(...)):
-    # 月の開始・終了日
+async def get_monthly_calendar(year: int = Query(...), month: int = Query(...)):
+    """
+    月間経済カレンダーを取得（重要度 HIGH の指標のみ）
+    """
     _, last_day = calendar.monthrange(year, month)
     start_date = date(year, month, 1)
     end_date = date(year, month, last_day)
 
-    # 仮データ（実際はDBまたはAPIから取得）
-    dummy_events = [
-        {
-            "event_datetime": f"{year}-{month:02d}-{d:02d}T10:00:00",
-            "indicator_name": f"指標 {d}",
-            "importance": "HIGH" if d % 5 == 0 else "LOW"
-        }
-        for d in range(1, last_day + 1)
-    ]
+    # 重要度 HIGH のみを取得
+    query = """
+        SELECT event_datetime, indicator_name, importance
+        FROM economic_calendar
+        WHERE DATE(event_datetime) BETWEEN :start_date AND :end_date
+          AND importance = 'HIGH'
+        ORDER BY event_datetime ASC
+    """
+    rows = await database.fetch_all(query=query, values={"start_date": start_date, "end_date": end_date})
 
-    # 週ごとにグルーピング
+    # 日付ごとにまとめる
+    day_map: Dict[str, List[Dict]] = {}
+    for r in rows:
+        dt: datetime = r["event_datetime"]
+        day_str = dt.date().isoformat()
+        if day_str not in day_map:
+            day_map[day_str] = []
+        day_map[day_str].append({
+            "event": r["indicator_name"],
+            "time": dt.strftime("%H:%M"),
+            "importance": r["importance"]
+        })
+
+    # 月間データを作成
     weeks = []
     current_week = []
-    for d in range(1, last_day + 1):
+
+    # 月初の前日（前月末）から埋める
+    first_day = date(year, month, 1)
+    first_weekday = first_day.weekday()  # 月曜=0
+    for i in range(first_weekday):
+        prev_date = first_day - timedelta(days=first_weekday - i)
         current_week.append({
-            "date": f"{year}-{month:02d}-{d:02d}",
-            "events": [dummy_events[d-1]] if d % 3 == 0 else []
+            "date": prev_date.isoformat(),
+            "events": day_map.get(prev_date.isoformat(), []),
+            "isCurrentMonth": False
         })
-        # 5列分ごとに1週とみなす（フロント仕様に合わせ）
-        if len(current_week) == 5 or d == last_day:
+
+    # 当月の日付を追加
+    for d in range(1, last_day + 1):
+        current_date = date(year, month, d)
+        current_week.append({
+            "date": current_date.isoformat(),
+            "events": day_map.get(current_date.isoformat(), []),
+            "isCurrentMonth": True
+        })
+        if len(current_week) == 7:
             weeks.append(current_week)
             current_week = []
+
+    # 月末の残り日を次月で埋める
+    next_day = 1
+    while len(current_week) > 0 and len(current_week) < 7:
+        next_date = date(year, month, last_day) + timedelta(days=next_day)
+        current_week.append({
+            "date": next_date.isoformat(),
+            "events": day_map.get(next_date.isoformat(), []),
+            "isCurrentMonth": False
+        })
+        next_day += 1
+    if current_week:
+        weeks.append(current_week)
 
     return {"weeks": weeks}
