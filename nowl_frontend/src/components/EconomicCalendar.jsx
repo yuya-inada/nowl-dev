@@ -372,51 +372,50 @@ const EconomicCalendar = () => {
               </div>
             </div>
 
-            {/* <div className="space-y-2"> */}
             {calendarView === "MONTH" && monthlyCalendar.length > 0 && (
-              <div>
-                <div className="space-y-2">
+              <div className="space-y-2">
+                {/* 曜日ヘッダー */}
+                <div className="grid grid-cols-7 gap-2 mb-1">
+                  {["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"].map((dow) => (
+                    <div key={dow} className="text-base text-[#D4B08C] text-center">
+                      {dow}
+                    </div>
+                  ))}
+                </div>
+                {/* カレンダー本体 */}
                 {buildCalendarGrid(monthlyCalendar[currentMonth], 2025, 10).map((week, weekIndex) => (
                   <div key={weekIndex} className="grid grid-cols-7 gap-2">
                     {week.map((day, dayIndex) => (
                       <div
                         key={dayIndex}
-                        className={`bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-20 ${
+                        className={`bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-30 ${
                           day.isCurrentMonth ? "" : "text-gray-400"
                         }`}
                       >
                         <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
-                        <div className="space-y-1">
-                          {day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length > 0 ? (
-                            day.events
-                              .filter(e => e.importance === "HIGH" || e.importance === "MEDIUM")
-                              .slice(0, 2)
-                              .map((event, eventIndex) => (
-                                <div key={eventIndex} className="flex items-center space-x-1">
-                                  <span
-                                    className={`w-1 h-1 rounded-full ${
-                                      event.importance === "HIGH"
-                                        ? "bg-red-500"
-                                        : "bg-yellow-500"
-                                    }`}
-                                  ></span>
-                                  <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
-                                </div>
-                              ))
+                        <div className="space-y-1 overflow-hidden">
+                          {day.events.length > 0 ? (
+                            day.events.slice(0, 6).map((event, eventIndex) => (
+                              <div key={eventIndex} className="flex items-center space-x-1 text-xs text-[#D4B08C]">
+                                <span
+                                  className={`w-1 h-1 rounded-full ${
+                                    event.importance === "HIGH" ? "bg-red-500" : "bg-gray-500"
+                                  }`}
+                                ></span>
+                                <span className="truncate">{event.event}</span>
+                              </div>
+                            ))
                           ) : (
                             <div className="text-xs text-[#8A7A6A]">No data</div>
                           )}
-                          {day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length > 2 && (
-                            <div className="text-xs text-[#8A7A6A]">
-                              +{day.events.filter(e => e.importance === "HIGH" || e.importance === "MEDIUM").length - 2} more
-                            </div>
+                          {day.events.length > 6 && (
+                            <div className="text-xs text-[#8A7A6A]">+{day.events.length - 6} more</div>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
                 ))}
-                </div>
               </div>
             )}
           </div>
