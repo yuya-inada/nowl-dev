@@ -555,3 +555,36 @@ async def get_economic_calendar_week(date: str = Query(None, description="基準
         "week_end": end_of_week.strftime("%Y-%m-%d"),
         "days": week_data
     }
+
+
+@app.get("/economic-calendar/month")
+def get_monthly_calendar(year: int = Query(...), month: int = Query(...)):
+    # 月の開始・終了日
+    _, last_day = calendar.monthrange(year, month)
+    start_date = date(year, month, 1)
+    end_date = date(year, month, last_day)
+
+    # 仮データ（実際はDBまたはAPIから取得）
+    dummy_events = [
+        {
+            "event_datetime": f"{year}-{month:02d}-{d:02d}T10:00:00",
+            "indicator_name": f"指標 {d}",
+            "importance": "HIGH" if d % 5 == 0 else "LOW"
+        }
+        for d in range(1, last_day + 1)
+    ]
+
+    # 週ごとにグルーピング
+    weeks = []
+    current_week = []
+    for d in range(1, last_day + 1):
+        current_week.append({
+            "date": f"{year}-{month:02d}-{d:02d}",
+            "events": [dummy_events[d-1]] if d % 3 == 0 else []
+        })
+        # 5列分ごとに1週とみなす（フロント仕様に合わせ）
+        if len(current_week) == 5 or d == last_day:
+            weeks.append(current_week)
+            current_week = []
+
+    return {"weeks": weeks}

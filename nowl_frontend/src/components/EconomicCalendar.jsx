@@ -111,14 +111,13 @@ const EconomicCalendar = () => {
   };
 
   // ✅ MONTH API
-  const fetchMonth = async (baseDate) => {
+  const fetchMonth = async (year, month) => {
     try {
-      const y = baseDate.getFullYear();
-      const m = String(baseDate.getMonth() + 1).padStart(2, "0");
-      const res = await fetch(`http://localhost:8081/economic-calendar/month?year=${y}&month=${m}`);
+      const res = await fetch(`http://localhost:8081/economic-calendar/month?year=${year}&month=${month}`);
       if (!res.ok) throw new Error("HTTP error");
       const data = await res.json();
-      setMonthlyCalendar(data.months || []);
+      setMonthlyCalendar([data]); // 配列で保持
+      setCurrentMonth(0);
     } catch (err) {
       console.error("API fetch error (month):", err);
       setMonthlyCalendar([]);
@@ -197,7 +196,11 @@ const EconomicCalendar = () => {
             WEEK
           </button>
           <button
-            onClick={switchToMonthView}
+            onClick={() => {
+              const today = new Date();
+              fetchMonth(today.getFullYear(), today.getMonth() + 1);
+              setCalendarView("MONTH");
+            }}
             className={`px-3 py-1 text-xs rounded transition-colors ${
               calendarView === "MONTH"
                 ? "bg-[#8B4513] text-[#D4B08C] font-semibold"
@@ -314,34 +317,86 @@ const EconomicCalendar = () => {
         {calendarView === "MONTH" && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#D4B08C]">Monthly View</h3>
+              <h3 className="text-sm font-semibold text-[#D4B08C]">
+                Monthly Calendar
+              </h3>
               <div className="flex space-x-2">
-                <button onClick={() => changeMonth(-1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Previous Month</button>
-                <button onClick={() => changeMonth(1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Next Month</button>
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Previous Month
+                </button>
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Next Month
+                </button>
               </div>
             </div>
 
             <div className="space-y-2">
-              {monthlyCalendar.map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-5 gap-2">
-                  {week.map((day, dayIndex) => (
-                    <div key={dayIndex} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-20">
-                      <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
-                      <div className="space-y-1">
-                        {day.events.slice(0, 2).map((event, idx) => (
-                          <div key={idx} className="flex items-center space-x-1">
-                            <span className={`w-1 h-1 rounded-full ${event.importance === "HIGH" ? "bg-red-500" : event.importance === "MEDIUM" ? "bg-yellow-500" : "bg-gray-500"}`}></span>
-                            <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
+            {calendarView === "MONTH" && monthlyCalendar.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-[#D4B08C]">月表示</h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setCurrentMonth(Math.max(0, currentMonth - 1))}
+                      className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                      disabled={currentMonth === 0}
+                    >
+                      前月
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentMonth(Math.min(monthlyCalendar.length - 1, currentMonth + 1))
+                      }
+                      className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                      disabled={currentMonth === monthlyCalendar.length - 1}
+                    >
+                      翌月へ
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {monthlyCalendar[currentMonth].weeks.map((week, weekIndex) => (
+                    <div key={weekIndex} className="grid grid-cols-5 gap-2">
+                      {week.map((day, dayIndex) => (
+                        <div key={dayIndex} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-20">
+                          <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
+                          <div className="space-y-1">
+                            {day.events.length > 0 ? (
+                              day.events.slice(0, 2).map((event, eventIndex) => (
+                                <div key={eventIndex} className="flex items-center space-x-1">
+                                  <span
+                                    className={`w-1 h-1 rounded-full ${
+                                      event.importance === "HIGH"
+                                        ? "bg-red-500"
+                                        : event.importance === "MEDIUM"
+                                        ? "bg-yellow-500"
+                                        : "bg-gray-500"
+                                    }`}
+                                  ></span>
+                                  <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-xs text-[#8A7A6A]">No data</div>
+                            )}
+                            {day.events.length > 2 && (
+                              <div className="text-xs text-[#8A7A6A]">+{day.events.length - 2}件</div>
+                            )}
                           </div>
-                        ))}
-                        {day.events.length > 2 && (
-                          <div className="text-xs text-[#8A7A6A]">+{day.events.length - 2} more</div>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
-              ))}
+              </div>
+            )}
             </div>
           </div>
         )}
