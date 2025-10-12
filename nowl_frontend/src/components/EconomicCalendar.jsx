@@ -48,7 +48,8 @@ const EconomicCalendar = () => {
   const [weeklyCalendar, setWeeklyCalendar] = useState(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthlyCalendar, setMonthlyCalendar] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState(0);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const getCurrentDate = () => {
     const dow = weekdayMap[currentDate.getDay()];
@@ -116,8 +117,9 @@ const EconomicCalendar = () => {
       const res = await fetch(`http://localhost:8081/economic-calendar/month?year=${year}&month=${month}`);
       if (!res.ok) throw new Error("HTTP error");
       const data = await res.json();
-      setMonthlyCalendar([data]); // 配列で保持
-      setCurrentMonth(0);
+      setMonthlyCalendar([data]); 
+      setCurrentMonth(month);
+      setCurrentYear(year);
     } catch (err) {
       console.error("API fetch error (month):", err);
       setMonthlyCalendar([]);
@@ -155,6 +157,10 @@ const EconomicCalendar = () => {
     setCurrentDate(newDate);
     fetchWeek(newDate);
   };
+
+  useEffect(() => {
+    fetchMonth(currentYear, currentMonth);
+  }, []);
 
   // ✅ 月切り替え
   const buildCalendarGrid = (monthData, year, month) => {
@@ -254,20 +260,24 @@ const EconomicCalendar = () => {
         {calendarView === "TODAY" && (
           // 👇（ここは完全にそのまま）
           <div>
-            <div className="mb-4 pb-2 border-b border-[#3A3A3A] flex items-center justify-between">
-              <button
-                onClick={() => changeDate(-1)}
-                className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
-              >
-                Previous Day
-              </button>
-              <h3 className="text-base font-semibold text-[#D4B08C]">{getCurrentDate()}</h3>
-              <button
-                onClick={() => changeDate(1)}
-                className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
-              >
-                Next Day
-              </button>
+            <div className="sticky top-0 z-10 bg-[#2A2A2A] border-b border-[#4A4A4A] px-4 py-2 mb-2">
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                <button
+                  onClick={() => changeDate(-1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Previous Day
+                </button>
+
+                <h1 className="text-[#D4B08C]">{getCurrentDate()}</h1>
+
+                <button
+                  onClick={() => changeDate(1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Next Day
+                </button>
+              </div>
             </div>
             {(economicCalendar.TODAY || []).length === 0 ? (
               <div className="text-[#8A7A6A] text-center py-4">No data for this day.</div>
@@ -315,16 +325,27 @@ const EconomicCalendar = () => {
         {calendarView === "WEEK" && weeklyCalendar && (
           // 👇ここもそのまま保持
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#D4B08C]">Weekly View</h3>
-              <div className="flex space-x-2">
-                <button onClick={() => changeWeek(-1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Previous Week</button>
-                <button onClick={() => changeWeek(1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Next Week</button>
+            <div className="sticky top-0 z-10 bg-[#2A2A2A] border-b border-[#4A4A4A] px-4 py-2 mb-2">
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                <button
+                  onClick={() => changeWeek(-1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Previous Week
+                </button>
+
+                <h1 className="text-[#D4B08C]">
+                  {weeklyCalendar.week_start} – {weeklyCalendar.week_end}
+                </h1>
+
+                <button
+                  onClick={() => changeWeek(1)}
+                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
+                >
+                  Next Week
+                </button>
               </div>
             </div>
-
-            <h3 className="text-[#D4B08C] text-sm mb-3">{weeklyCalendar.week_start} – {weeklyCalendar.week_end}</h3>
-
             <div className="grid grid-cols-5 gap-2">
               {weeklyCalendar.days.map((day, idx) => (
                 <div key={idx} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2">
@@ -349,29 +370,44 @@ const EconomicCalendar = () => {
           </div>
         )}
 
-        {/* === MONTH VIEW === */}
+        {/* === MONTH VIEW HEADER === */}
         {calendarView === "MONTH" && (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#D4B08C]">
-                Monthly Calendar
-              </h3>
-              <div className="flex space-x-2">
+            <div className="sticky top-0 z-10 bg-[#2A2A2A] border-b border-[#4A4A4A] px-4 py-2 mb-2">
+              <div className="flex items-center justify-center space-x-4 mb-4">
                 <button
-                  onClick={() => changeMonth(-1)}
+                  onClick={() => {
+                    let newMonth = currentMonth - 1;
+                    let newYear = currentYear;
+                    if (newMonth === 0) {
+                      newMonth = 12;
+                      newYear -= 1;
+                    }
+                    fetchMonth(newYear, newMonth);
+                  }}
                   className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
                 >
                   Previous Month
                 </button>
+
+                <h1 className="text-[#D4B08C]">{currentYear} / {String(currentMonth).padStart(2,"0")}</h1>
+
                 <button
-                  onClick={() => changeMonth(1)}
+                  onClick={() => {
+                    let newMonth = currentMonth + 1;
+                    let newYear = currentYear;
+                    if (newMonth === 13) {
+                      newMonth = 1;
+                      newYear += 1;
+                    }
+                    fetchMonth(newYear, newMonth);
+                  }}
                   className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
                 >
                   Next Month
                 </button>
               </div>
             </div>
-
             {calendarView === "MONTH" && monthlyCalendar.length > 0 && (
               <div className="space-y-2">
                 {/* 曜日ヘッダー */}
@@ -382,46 +418,48 @@ const EconomicCalendar = () => {
                     </div>
                   ))}
                 </div>
-                {/* カレンダー本体 */}
-                {buildCalendarGrid(monthlyCalendar[currentMonth], 2025, 10)
-                  .map((week, weekIndex) => (
-                    <div key={weekIndex} className="grid grid-cols-5 gap-2">
-                      {week
-                        .filter((day) => {
-                          const dow = new Date(day.date).getDay();
-                          return dow >= 1 && dow <= 5; // 月=1〜金=5
-                        })
-                        .map((day, dayIndex) => (
-                          <div
-                            key={dayIndex}
-                            className={`bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-30 ${
-                              day.isCurrentMonth ? "" : "text-gray-400"
-                            }`}
-                          >
-                            <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
-                            <div className="space-y-1 overflow-hidden">
-                              {day.events.length > 0 ? (
-                                day.events.slice(0, 6).map((event, eventIndex) => (
-                                  <div key={eventIndex} className="flex items-center space-x-1 text-xs text-[#D4B08C]">
-                                    <span
-                                      className={`w-1 h-1 rounded-full ${
-                                        event.importance === "HIGH" ? "bg-red-500" : "bg-gray-500"
-                                      }`}
-                                    ></span>
-                                    <span className="truncate">{event.event}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-xs text-[#8A7A6A]">No data</div>
-                              )}
-                              {day.events.length > 6 && (
-                                <div className="text-xs text-[#8A7A6A]">+{day.events.length - 6} more</div>
-                              )}
+                <div className="overflow-y-auto max-h-[500px] px-4">
+                  {/* カレンダー本体（buildCalendarGrid で生成されたもの） */}
+                  {buildCalendarGrid(monthlyCalendar[0], currentYear, currentMonth)
+                    .map((week, weekIndex) => (
+                      <div key={weekIndex} className="grid grid-cols-5 gap-2 mb-1">
+                        {week
+                          .filter((day) => {
+                            const dow = new Date(day.date).getDay();
+                            return dow >= 1 && dow <= 5; // 月〜金
+                          })
+                          .map((day, dayIndex) => (
+                            <div
+                              key={dayIndex}
+                              className={`bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-30 ${
+                                day.isCurrentMonth ? "" : "text-gray-400"
+                              }`}
+                            >
+                              <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
+                              <div className="space-y-1 overflow-hidden">
+                                {day.events.length > 0 ? (
+                                  day.events.slice(0, 6).map((event, eventIndex) => (
+                                    <div key={eventIndex} className="flex items-center space-x-1 text-xs text-[#D4B08C]">
+                                      <span
+                                        className={`w-1 h-1 rounded-full ${
+                                          event.importance === "HIGH" ? "bg-red-500" : "bg-gray-500"
+                                        }`}
+                                      ></span>
+                                      <span className="truncate">{event.event}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-[#8A7A6A]">No data</div>
+                                )}
+                                {day.events.length > 6 && (
+                                  <div className="text-xs text-[#8A7A6A]">+{day.events.length - 6} more</div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                ))}
+                          ))}
+                      </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
