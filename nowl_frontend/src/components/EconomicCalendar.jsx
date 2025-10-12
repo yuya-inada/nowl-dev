@@ -47,6 +47,8 @@ const EconomicCalendar = () => {
   const [economicCalendar, setEconomicCalendar] = useState({ TODAY: [] });
   const [weeklyCalendar, setWeeklyCalendar] = useState(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [monthlyCalendar, setMonthlyCalendar] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(0);
 
   const getCurrentDate = () => {
     const dow = weekdayMap[currentDate.getDay()];
@@ -108,6 +110,21 @@ const EconomicCalendar = () => {
     }
   };
 
+  // ✅ MONTH API
+  const fetchMonth = async (baseDate) => {
+    try {
+      const y = baseDate.getFullYear();
+      const m = String(baseDate.getMonth() + 1).padStart(2, "0");
+      const res = await fetch(`http://localhost:8081/economic-calendar/month?year=${y}&month=${m}`);
+      if (!res.ok) throw new Error("HTTP error");
+      const data = await res.json();
+      setMonthlyCalendar(data.months || []);
+    } catch (err) {
+      console.error("API fetch error (month):", err);
+      setMonthlyCalendar([]);
+    }
+  };
+
   useEffect(() => {
     fetchDay(currentDate);
   }, []);
@@ -140,6 +157,19 @@ const EconomicCalendar = () => {
     fetchWeek(newDate);
   };
 
+  // ✅ 月切り替え
+  const switchToMonthView = () => {
+    fetchMonth(currentDate);
+    setCalendarView("MONTH");
+  };
+
+  const changeMonth = (direction) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + direction);
+    setCurrentDate(newDate);
+    fetchMonth(newDate);
+  };
+
   return (
     <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
       {/* ==== HEADER ==== */}
@@ -166,6 +196,16 @@ const EconomicCalendar = () => {
           >
             WEEK
           </button>
+          <button
+            onClick={switchToMonthView}
+            className={`px-3 py-1 text-xs rounded transition-colors ${
+              calendarView === "MONTH"
+                ? "bg-[#8B4513] text-[#D4B08C] font-semibold"
+                : "bg-[#4A4A4A] text-[#8A7A6A] hover:bg-[#5A5A5A]"
+            }`}
+          >
+            MONTH
+          </button>
         </div>
       </div>
 
@@ -173,6 +213,7 @@ const EconomicCalendar = () => {
       <div className="p-4">
         {/* === TODAY VIEW === */}
         {calendarView === "TODAY" && (
+          // 👇（ここは完全にそのまま）
           <div>
             <div className="mb-4 pb-2 border-b border-[#3A3A3A] flex items-center justify-between">
               <button
@@ -189,16 +230,13 @@ const EconomicCalendar = () => {
                 Next Day
               </button>
             </div>
-
             {(economicCalendar.TODAY || []).length === 0 ? (
               <div className="text-[#8A7A6A] text-center py-4">No data for this day.</div>
             ) : (
               <div className="space-y-2">
                 {(economicCalendar.TODAY || []).map((event, i) => (
                   <div key={i} className="border-b border-[#3A3A3A] py-2 text-sm text-[#D4B08C]">
-                    {/* --- イベントタイトル行 --- */}
                     <div className="flex items-center space-x-3">
-                      {/* 重要度インジケータ */}
                       <span
                         className={`w-2 h-2 rounded-full ${
                           event.importance === "HIGH"
@@ -213,17 +251,10 @@ const EconomicCalendar = () => {
                       <div className="text-[#D4B08C] text-sm">{event.event}</div>
                     </div>
 
-                    {/* --- 結果・予想・前回 --- */}
                     <div className="grid grid-cols-3 gap-4 ml-16 text-xs mt-1">
                       <div className="text-center">
                         <div className="text-[#8A7A6A] mb-1">結果</div>
-                        <div
-                          className={`font-mono font-semibold ${
-                            event.result === "-" ? "text-[#8A7A6A]" : "text-[#D4B08C]"
-                          }`}
-                        >
-                          {event.result}
-                        </div>
+                        <div className={`font-mono font-semibold ${event.result === "-" ? "text-[#8A7A6A]" : "text-[#D4B08C]"}`}>{event.result}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-[#8A7A6A] mb-1">予想</div>
@@ -243,28 +274,17 @@ const EconomicCalendar = () => {
 
         {/* === WEEK VIEW === */}
         {calendarView === "WEEK" && weeklyCalendar && (
+          // 👇ここもそのまま保持
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-[#D4B08C]">Weekly View</h3>
               <div className="flex space-x-2">
-                <button
-                  onClick={() => changeWeek(-1)}
-                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
-                >
-                  Previous Week
-                </button>
-                <button
-                  onClick={() => changeWeek(1)}
-                  className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]"
-                >
-                  Next Week
-                </button>
+                <button onClick={() => changeWeek(-1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Previous Week</button>
+                <button onClick={() => changeWeek(1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Next Week</button>
               </div>
             </div>
 
-            <h3 className="text-[#D4B08C] text-sm mb-3">
-              {weeklyCalendar.week_start} – {weeklyCalendar.week_end}
-            </h3>
+            <h3 className="text-[#D4B08C] text-sm mb-3">{weeklyCalendar.week_start} – {weeklyCalendar.week_end}</h3>
 
             <div className="grid grid-cols-5 gap-2">
               {weeklyCalendar.days.map((day, idx) => (
@@ -277,21 +297,49 @@ const EconomicCalendar = () => {
                     {day.events.map((ev, i) => (
                       <div key={i} className="text-xs text-[#D4B08C]">
                         <div className="flex items-center space-x-1">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              ev.importance === "HIGH"
-                                ? "bg-red-500"
-                                : ev.importance === "MEDIUM"
-                                ? "bg-yellow-500"
-                                : "bg-gray-500"
-                            }`}
-                          ></span>
+                          <span className={`w-2 h-2 rounded-full ${ev.importance === "HIGH" ? "bg-red-500" : ev.importance === "MEDIUM" ? "bg-yellow-500" : "bg-gray-500"}`}></span>
                           <span className="text-[#8A7A6A]">{ev.time}</span>
                         </div>
                         <div className="leading-tight">{ev.event}</div>
                       </div>
                     ))}
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* === MONTH VIEW === */}
+        {calendarView === "MONTH" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#D4B08C]">Monthly View</h3>
+              <div className="flex space-x-2">
+                <button onClick={() => changeMonth(-1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Previous Month</button>
+                <button onClick={() => changeMonth(1)} className="px-2 py-1 text-xs bg-[#4A4A4A] text-[#8A7A6A] rounded hover:bg-[#5A5A5A]">Next Month</button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {monthlyCalendar.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-cols-5 gap-2">
+                  {week.map((day, dayIndex) => (
+                    <div key={dayIndex} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2 h-20">
+                      <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
+                      <div className="space-y-1">
+                        {day.events.slice(0, 2).map((event, idx) => (
+                          <div key={idx} className="flex items-center space-x-1">
+                            <span className={`w-1 h-1 rounded-full ${event.importance === "HIGH" ? "bg-red-500" : event.importance === "MEDIUM" ? "bg-yellow-500" : "bg-gray-500"}`}></span>
+                            <span className="text-xs text-[#D4B08C] truncate">{event.event}</span>
+                          </div>
+                        ))}
+                        {day.events.length > 2 && (
+                          <div className="text-xs text-[#8A7A6A]">+{day.events.length - 2} more</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
