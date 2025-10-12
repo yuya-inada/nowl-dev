@@ -2,10 +2,11 @@
 # fetch_economic_calendar_today_and_yesterday.py
 
 from playwright.sync_api import sync_playwright
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from dotenv import load_dotenv
 import os
 import psycopg2
+import pytz
 
 # --------------------------
 # .env読み込みとDB接続情報
@@ -20,7 +21,15 @@ DB_PARAMS = {
     "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
-ECONOMIC_CALENDAR_URL = "https://www.investing.com/economic-calendar/"
+# 言語設定: en or ja
+LANG = os.getenv("ECONOMIC_CALENDAR_LANG", "ja")
+
+# URL切替
+ECONOMIC_CALENDAR_URL = (
+    "https://jp.investing.com/economic-calendar/"
+    if LANG == "ja"
+    else "https://www.investing.com/economic-calendar/"
+)
 
 # --------------------------
 # 共通クリーンアップ関数
@@ -33,32 +42,41 @@ def _clean(val):
         return None
     return v
 
+# --------------------------
+# JST変換
+# --------------------------
+def to_jst(dt: datetime) -> datetime:
+    """UTCまたは現地時間→日本時間へ"""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone(timedelta(hours=9)))
 
 # --------------------------
 # ページからイベント取得
 # --------------------------
-def fetch_economic_calendar_by_tab(tab_id: str):
+def fetch_economic_calendar_by_tab(tab_id: str, base_day: date):  # ← base_dayを引数に追加
     events = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--window-size=1920,1080"])
         page = browser.new_page()
-        page.set_extra_http_headers({"Accept-Language": "en-US,en;q=0.9"})
+
+        page.set_extra_http_headers({
+            "Accept-Language": "ja,en;q=0.9" if LANG == "ja" else "en-US,en;q=0.9"
+        })
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        print(f"📅 {tab_id} 取得中...")
+        print(f"🌍 [{LANG.upper()}] {tab_id} 取得中: {ECONOMIC_CALENDAR_URL}")
         page.goto(ECONOMIC_CALENDAR_URL, timeout=180000, wait_until="domcontentloaded")
 
-        # 対象タブクリック
         tab = page.query_selector(f"a#{tab_id}")
         if tab:
             tab.click()
-            page.wait_for_timeout(3000)  # JS描画待機
+            page.wait_for_timeout(3500)
         else:
             print(f"❌ {tab_id} が見つかりません")
             browser.close()
             return []
 
-        # 経済指標行を取得
         rows = page.query_selector_all("tr.js-event-item")
         for row in rows:
             try:
@@ -70,15 +88,19 @@ def fetch_economic_calendar_by_tab(tab_id: str):
 
                 dt_attr = row.get_attribute("data-event-datetime")
                 if dt_attr:
+                    # 日本版では JST として扱う
                     dt = datetime.strptime(dt_attr, "%Y/%m/%d %H:%M:%S")
                 else:
                     time_text = row.query_selector("td.time").inner_text().strip() if row.query_selector("td.time") else "00:00"
-                    t = datetime.strptime(time_text, "%H:%M").time()
-                    dt = datetime.combine(date.today(), t)
+                    try:
+                        t = datetime.strptime(time_text, "%H:%M").time()
+                    except ValueError:
+                        t = datetime.strptime("00:00", "%H:%M").time()
+                    dt = datetime.combine(base_day, t)
 
+                # dt_jst = to_jst(dt)
                 status = "結果あり" if actual else "未発表"
 
-                # 重要度判定
                 importance_cell = row.query_selector("td.sentiment")
                 if importance_cell:
                     img_key = importance_cell.get_attribute("data-img_key")
@@ -100,18 +122,16 @@ def fetch_economic_calendar_by_tab(tab_id: str):
                 print("行解析エラー:", e)
                 continue
 
-        browser = p.chromium.launch(headless=False, slow_mo=100)
+        browser.close()
     return events
 
-
 # --------------------------
-# DB保存（重複防止＋更新対応）
+# DB保存処理（同じ）
 # --------------------------
 def save_calendar_to_db(events):
     if not events:
         print("保存対象データなし")
         return
-
     conn = psycopg2.connect(**DB_PARAMS)
     cur = conn.cursor()
     inserted = 0
@@ -149,17 +169,22 @@ def save_calendar_to_db(events):
     conn.close()
     print(f"✅ {inserted} 件の経済カレンダーを保存しました")
 
-
 # --------------------------
-# 実行部分（昨日＋今日）
+# 実行部分
 # --------------------------
 if __name__ == "__main__":
     all_events = []
 
-    for tab in ["timeFrame_yesterday", "timeFrame_today"]:
-        events = fetch_economic_calendar_by_tab(tab)
-        print(f"{tab} → {len(events)} 件")
-        all_events.extend(events)
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+
+    events_y = fetch_economic_calendar_by_tab("timeFrame_yesterday", yesterday)
+    print(f"timeFrame_yesterday → {len(events_y)} 件")
+    all_events.extend(events_y)
+
+    events_t = fetch_economic_calendar_by_tab("timeFrame_today", today)
+    print(f"timeFrame_today → {len(events_t)} 件")
+    all_events.extend(events_t)
 
     print(f"合計: {len(all_events)} 件をDB保存")
     save_calendar_to_db(all_events)
