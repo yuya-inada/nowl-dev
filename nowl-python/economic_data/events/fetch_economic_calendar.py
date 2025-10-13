@@ -100,7 +100,8 @@ def fetch_economic_calendar_by_tab(tab_id: str, base_day: date):
                     t = datetime.strptime(time_text, "%H:%M").time()
                     dt = datetime.combine(base_day, t)
 
-                dt_jst = to_jst(dt)
+                # ✅ 修正：日本語版はJSTなので変換しない
+                dt_jst = dt if LANG == "ja" else to_jst(dt)
                 status = "結果あり" if actual else "未発表"
 
                 importance_cell = row.query_selector("td.sentiment")
