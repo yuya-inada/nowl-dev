@@ -283,7 +283,7 @@ if __name__ == "__main__":
     print(f"合計: {len(all_events)} 件をDB保存")
     save_calendar_to_db(all_events)
 
-    # 英語版からカテゴリー取得（全体を対象）
-    categories = fetch_category_from_english("timeFrame_thisWeek")
-    print(f"{len(categories)} 件のカテゴリー取得")
-    update_category_to_db(categories)
+    # # 英語版からカテゴリー取得（全体を対象）
+    # categories = fetch_category_from_english("timeFrame_thisWeek")
+    # print(f"{len(categories)} 件のカテゴリー取得")
+    # update_category_to_db(categories)
