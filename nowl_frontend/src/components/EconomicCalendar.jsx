@@ -371,27 +371,27 @@ const EconomicCalendar = () => {
                   </div>
                   <hr className="mb-3 border-t-2 border-[#8A7A6A]" />
                   <div className="space-y-1">
-  {day.events.map((ev, i) => (
-    <div key={i} className="flex items-start text-xs text-[#D4B08C]">
-      {/* 重要度丸アイコン */}
-      <span
-        className={`w-2 h-2 rounded-full mt-0.5 ${
-          ev.importance === "HIGH"
-            ? "bg-red-500"
-            : ev.importance === "MEDIUM"
-            ? "bg-yellow-500"
-            : "bg-gray-500"
-        }`}
-      ></span>
-      
-      {/* 時間 */}
-      <span className="text-[#8A7A6A] ml-1">{ev.time}</span>
-      
-      {/* イベント名 */}
-      <span className="pl-2 text-left">{ev.event}</span>
-    </div>
-  ))}
-</div>
+                    {day.events.map((ev, i) => (
+                      <div key={i} className="flex items-start text-xs text-[#D4B08C]">
+                        {/* 重要度丸アイコン */}
+                        <span
+                          className={`w-2 h-2 rounded-full mt-0.5 ${
+                            ev.importance === "HIGH"
+                              ? "bg-red-500"
+                              : ev.importance === "MEDIUM"
+                              ? "bg-yellow-500"
+                              : "bg-gray-500"
+                          }`}
+                        ></span>
+                        
+                        {/* 時間 */}
+                        <span className="text-[#8A7A6A] ml-1">{ev.time}</span>
+                        
+                        {/* イベント名 */}
+                        <span className="pl-2 text-left">{ev.event}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
