@@ -269,7 +269,7 @@ const EconomicCalendar = () => {
                   Previous Day
                 </button>
 
-                <h1 className="text-[#D4B08C]">{getCurrentDate()}</h1>
+                <h1 className="text-2xl text-[#D4B08C]">{getCurrentDate()}</h1>
 
                 <button
                   onClick={() => changeDate(1)}
@@ -350,7 +350,7 @@ const EconomicCalendar = () => {
                   Previous Week
                 </button>
 
-                <h1 className="text-[#D4B08C]">
+                <h1 className="text-2xl text-[#D4B08C]">
                   {weeklyCalendar.week_start} – {weeklyCalendar.week_end}
                 </h1>
 
@@ -418,7 +418,7 @@ const EconomicCalendar = () => {
                   Previous Month
                 </button>
 
-                <h1 className="text-[#D4B08C]">{currentYear} / {String(currentMonth).padStart(2,"0")}</h1>
+                <h1 className="text-2xl text-[#D4B08C]">{currentYear} / {String(currentMonth).padStart(2,"0")}</h1>
 
                 <button
                   onClick={() => {
