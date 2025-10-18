@@ -285,13 +285,13 @@ const EconomicCalendar = () => {
               <div className="space-y-1">
                 {/* ヘッダー */}
                 <div className="grid grid-cols-[50px_80px_80px_1fr_150px_150px_150px] gap-2 text-xs text-[#8A7A6A] font-semibold border-b border-[#3A3A3A] pb-1">
-                  <div className="text-center">重要度</div>
-                  <div className="text-center">時間</div>
-                  <div className="text-center">国</div>
-                  <div>イベント名</div>
-                  <div className="text-center">結果</div>
-                  <div className="text-center">予想</div>
-                  <div className="text-center">前回</div>
+                  <div className="text-center">Importance</div>
+                  <div className="text-center">Time</div>
+                  <div className="text-center">Country</div>
+                  <div>Event Name</div>
+                  <div className="text-center">Result</div>
+                  <div className="text-center">Prediction</div>
+                  <div className="text-center">Previous</div>
                 </div>
 
                 {/* イベント行 */}

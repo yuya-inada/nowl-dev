@@ -15,9 +15,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
+        // username または email のどちらでもログインできるようにする
+        User user = userRepository.findByUsername(loginId)
+                .or(() -> userRepository.findByEmail(loginId))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + loginId));
+
         return new UserDetailsImpl(
                 user.getId(),
                 user.getUsername(),

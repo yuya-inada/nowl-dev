@@ -29,25 +29,29 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        System.out.println("LoginRequest received: username=" + request.username() + ", password=" + request.password());
+        System.out.println("LoginRequest received: username=" + request.username() + ", email=" + request.email());
+
+        String loginId = (request.username() != null && !request.username().isEmpty())
+            ? request.username()
+            : request.email(); // メール優先
+
+        if (loginId == null || loginId.isEmpty()) {
+            return ResponseEntity.badRequest().body("Username or email must be provided");
+        }
 
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+                new UsernamePasswordAuthenticationToken(loginId, request.password())
             );
         } catch (Exception e) {
-            e.printStackTrace(); // ここで例外が出ているか確認
-            return ResponseEntity.status(403).body("Authentication failed: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(403).body("Authentication failed: Bad credentials");
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        // ここで role を取得して　JWT にセット
-        // UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        // String role = userDetails.getAuthorities().stream()
-        //                         .map(a -> a.getAuthority())
-        //                         .findFirst().orElse("ROLE_USER");
         String jwt = jwtUtils.generateToken(authentication);
+
         return ResponseEntity.ok(new JwtResponse(jwt));
     }
 
