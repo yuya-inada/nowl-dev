@@ -205,24 +205,26 @@ def save_calendar_to_db(events):
         try:
             cur.execute("""
                 INSERT INTO economic_calendar
-                (event_datetime, country_code, indicator_name,
-                 actual_value, forecast_value, previous_value,
-                 status, importance, category, last_updated)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
-                ON CONFLICT (event_datetime, indicator_name)
+                (event_datetime, event_date, country_code, indicator_name,
+                actual_value, forecast_value, previous_value,
+                status, importance, category, last_updated)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
+                ON CONFLICT (event_date, country_code, indicator_name)
                 DO UPDATE SET
-                  actual_value = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
-                  forecast_value = COALESCE(NULLIF(EXCLUDED.forecast_value, ''), economic_calendar.forecast_value),
-                  previous_value = COALESCE(NULLIF(EXCLUDED.previous_value, ''), economic_calendar.previous_value),
-                  status = CASE
-                              WHEN COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value) IS NOT NULL THEN '結果あり'
-                              ELSE '未発表'
-                           END,
-                  importance = EXCLUDED.importance,
-                  category = COALESCE(EXCLUDED.category, economic_calendar.category),
-                  last_updated = NOW()
+                event_datetime = EXCLUDED.event_datetime,  -- ← 時間更新も可能
+                actual_value = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
+                forecast_value = COALESCE(NULLIF(EXCLUDED.forecast_value, ''), economic_calendar.forecast_value),
+                previous_value = COALESCE(NULLIF(EXCLUDED.previous_value, ''), economic_calendar.previous_value),
+                status = CASE
+                            WHEN COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value) IS NOT NULL THEN '結果あり'
+                            ELSE '未発表'
+                        END,
+                importance = EXCLUDED.importance,
+                category = COALESCE(EXCLUDED.category, economic_calendar.category),
+                last_updated = NOW()
             """, (
-                e["event_datetime"], e["country_code"], e["indicator_name"],
+                e["event_datetime"], e["event_datetime"].date(),
+                e["country_code"], e["indicator_name"],
                 e["actual_value"], e["forecast_value"], e["previous_value"],
                 e["status"], e["importance"], e["category"]
             ))
