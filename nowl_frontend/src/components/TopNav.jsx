@@ -1,9 +1,19 @@
 // src/components/TopNav.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
-export default function TopNav() {
+export default function TopNav({ currentUser, emailVerified, twoFactorEnabled, setCurrentView }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTerminal, setActiveTerminal] = useState("HOME");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 🔹 現在のURLに応じて activeTerminal を更新
+  useEffect(() => {
+    if (location.pathname === "/dashboard") setActiveTerminal("HOME");
+    else if (location.pathname === "/settings") setActiveTerminal("SETTINGS");
+    else setActiveTerminal(""); // それ以外のページ
+  }, [location]);
 
   const terminalFunctions = [
     { code: "HOME" },
@@ -93,7 +103,11 @@ export default function TopNav() {
         {terminalFunctions.map((func, index) => (
           <button
             key={index}
-            onClick={() => setActiveTerminal(func.code)}
+            onClick={() => {
+              if (func.code === "HOME") navigate("/dashboard");
+              if (func.code === "SETTINGS") navigate("/settings");
+              setActiveTerminal(func.code);
+            }}
             className={`px-3 py-1 text-xs rounded transition-colors ${
               activeTerminal === func.code
                 ? "bg-[#8B4513] text-[#D4B08C] font-semibold"
