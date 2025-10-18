@@ -70,8 +70,12 @@ async def get_candles(
 
     if from_:
         try:
-            from_dt = datetime.fromisoformat(from_.replace("Z", "+00:00"))
-            from_dt = from_dt.astimezone(JST).replace(tzinfo=None)
+            # UTC → datetimeに変換
+            from_dt_utc = datetime.fromisoformat(from_.replace("Z", "+00:00"))
+            # JSTに変換（DBはJST基準）
+            from_dt = from_dt_utc.astimezone(JST).replace(tzinfo=None)
+            print("🕒 [DEBUG] from_ (UTC):", from_)
+            print("🕒 [DEBUG] from_dt (JST補正後):", from_dt)
         except Exception as e:
             print("from_変換エラー:", from_, e)
             from_dt = None
@@ -91,8 +95,9 @@ async def get_candles(
         "1w": "week",
         "1M": "month",
     }
-    trunc_unit = interval_map.get(interval, "minute")  # デフォルト1分足
+    trunc_unit = interval_map.get(interval, "minute")
 
+    # ✅ JSTで比較するよう修正
     query = f"""
     WITH grouped AS (
         SELECT
@@ -105,7 +110,7 @@ async def get_candles(
             SUM(volume) AS volume
         FROM market_index_candles
         WHERE symbol = :symbol
-        {"AND timestamp >= :from_dt" if from_dt else ""}
+        {"AND (timestamp AT TIME ZONE 'Asia/Tokyo') >= :from_dt" if from_dt else ""}
         GROUP BY ts, symbol
     )
     SELECT 
@@ -129,6 +134,7 @@ async def get_candles(
 
     try:
         result = await database.fetch_all(query=query, values=values)
+        print(f"✅ {symbol}: {len(result)} 件取得（from_dt={from_dt}）")
         return [
             {
                 "timestamp": r["ts"],
