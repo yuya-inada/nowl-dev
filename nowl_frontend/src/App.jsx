@@ -4,6 +4,8 @@ import UsersList from "./pages/UsersList";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import jwtDecode from "jwt-decode";
+import SettingView from "./components/SettingView";
+import TopNav from "./components/TopNav";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -112,6 +114,31 @@ export default function App() {
           <Route
             path="/dashboard"
             element={currentUser ? <Dashboard currentUser={currentUser} /> : <Navigate to="/login" />}
+          />
+
+          {/* 設定画面（★これを追加） */}
+          <Route
+            path="/settings"
+            element={currentUser ? (
+              <>
+                <TopNav
+                  currentUser={currentUser}
+                  emailVerified={true}
+                  twoFactorEnabled={false}
+                  setCurrentView={() => {}}
+                />
+                <div className="mt-20 px-4">
+                  <SettingView
+                    formData={currentUser}
+                    emailVerified={true}
+                    twoFactorEnabled={false}
+                    setCurrentView={() => {}}
+                  />
+                </div>
+              </>
+            ) : (
+              <Navigate to="/login" />
+            )}
           />
 
           {/* その他はホームにリダイレクト */}
