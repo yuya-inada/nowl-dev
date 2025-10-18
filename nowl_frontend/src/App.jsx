@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import jwtDecode from "jwt-decode";
 import SettingView from "./components/SettingView";
 import TopNav from "./components/TopNav";
+import Register from "./pages/Register";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -140,6 +141,9 @@ export default function App() {
               <Navigate to="/login" />
             )}
           />
+
+          {/* 🔹 新規登録画面 */}
+          <Route path="/register" element={<Register />} />
 
           {/* その他はホームにリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />
