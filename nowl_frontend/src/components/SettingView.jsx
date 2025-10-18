@@ -2,7 +2,7 @@
 import React from "react";
 
 const SettingView = ({ formData, emailVerified, twoFactorEnabled, setCurrentView }) => (
-  <div className="max-w-4xl mx-auto space-y-6">
+  <div className="max-w-6xl mx-auto space-y-6">
     {/* アカウント概要 */}
     <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl p-6">
       <h2 className="text-xl font-bold text-[#D4B08C] mb-4">アカウント概要</h2>
