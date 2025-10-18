@@ -93,3 +93,6 @@ nowl-backend/.nb-gradle/
 
 # VS Code (backend)
 nowl-backend/.vscode/
+
+# Guide
+README_Authentication_Guide.md
