@@ -446,7 +446,7 @@ const EconomicCalendar = () => {
                     </div>
                   ))}
                 </div>
-                <div className="overflow-y-auto max-h-[500px] px-4">
+                <div className="px-4">
                   {/* カレンダー本体（buildCalendarGrid で生成されたもの） */}
                   {buildCalendarGrid(monthlyCalendar[0], currentYear, currentMonth)
                     .map((week, weekIndex) => (
@@ -464,7 +464,7 @@ const EconomicCalendar = () => {
                               }`}
                             >
                               <div className="text-xs text-[#8A7A6A] mb-1">{day.date}</div>
-                              <div className="space-y-1 overflow-hidden">
+                              <div className="space-y-1">
                                 {day.events.length > 0 ? (
                                   day.events.slice(0, 6).map((event, eventIndex) => (
                                     <div key={eventIndex} className="flex items-center space-x-1 text-xs text-[#D4B08C]">
@@ -473,6 +473,9 @@ const EconomicCalendar = () => {
                                           event.importance === "HIGH" ? "bg-red-500" : "bg-gray-500"
                                         }`}
                                       ></span>
+                                      {/* 国 */}
+                                      <span className="font-semibold">{event.country}</span>
+                                      {/* 経済指標名 */}
                                       <span className="truncate">{event.event}</span>
                                     </div>
                                   ))
