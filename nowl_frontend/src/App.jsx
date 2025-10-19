@@ -43,6 +43,26 @@ export default function App() {
     }
   }, []);
 
+  // 設定画面用のユーザーデータの取得
+  useEffect(() => {
+    if(currentUser?.id) {
+      const token = localStorage.getItem("jwt"); // JWT取得
+      fetch(`http://localhost:8080/users/${currentUser.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ヘッダーにJWTを付与
+        }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(data => setCurrentUser(data))
+        .catch(err => console.error("ユーザー情報取得エラー:", err));
+    }
+  }, [currentUser?.id]);
+
   const handleLogout = () => {
     localStorage.removeItem("jwt");
     setCurrentUser(null);
@@ -117,7 +137,7 @@ export default function App() {
             element={currentUser ? <Dashboard currentUser={currentUser} /> : <Navigate to="/login" />}
           />
 
-          {/* 設定画面（★これを追加） */}
+          {/* 設定画面 */}
           <Route
             path="/settings"
             element={currentUser ? (
