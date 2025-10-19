@@ -278,7 +278,9 @@ if __name__ == "__main__":
     # 日本語版取得
     for tab, base_day in [("timeFrame_yesterday", yesterday),
                           ("timeFrame_today", today),
-                          ("timeFrame_thisWeek", today)]:
+                          ("timeFrame_thisWeek", today),
+                          ("timeFrame_nextWeek", today)
+                          ]:
         events = fetch_economic_calendar_by_tab(tab, base_day)
         print(f"{tab} → {len(events)} 件")
         all_events.extend(events)
