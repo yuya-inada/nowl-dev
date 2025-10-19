@@ -63,7 +63,6 @@ def fetch_candles(symbol, start=None, end=None, interval="1m", market_type="N225
             data.index = data.index.tz_convert(JST)
     except Exception as e:
         print(f"{symbol}: tz変換エラー: {e}")
-        # 続行は試みるが、問題あればNone返す
         return None
 
     # ソート & 重複削除
@@ -87,7 +86,6 @@ def get_latest_timestamp(market_type):
         resp = requests.get(URL_LATEST, params={"symbol": market_type, "marketType": market_type}, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
-            # サーバーが直接タイムスタンプ文字列を返す前提
             return data.get("timestamp")
     except Exception as e:
         print(f"[{market_type}] 最新取得エラー: {e}")
@@ -126,14 +124,27 @@ def process_market(market, target_date):
     if data is None or data.empty:
         return
 
+    # --- JST変換済みなので target_date 当日のデータのみ抽出 ---
+    data = data[data.index.date == target_date.date()]
+
     latest_ts = get_latest_timestamp(db_symbol)
-    # 米長期金利の最新を必要なら保管する（変数定義しておく）
     tnx_close_latest = None
+
+    # --- 追加: 送信済み timestamp をセットで保持 ---
+    sent_timestamps = set()
 
     for index, row in data.iterrows():
         ts_str = index.strftime("%Y-%m-%dT%H:%M:%S")
+
+        # 最新 timestamp より古い場合はスキップ
         if latest_ts and ts_str <= latest_ts:
             continue
+
+        # 追加: 同じ日内で重複 timestamp があればスキップ
+        if ts_str in sent_timestamps:
+            print(f"[{db_symbol}] {ts_str} は重複のためスキップ")
+            continue
+
         # Volume が nan の可能性があるので int キャスト前に保護
         vol = row.get('Volume', 0)
         try:
@@ -142,7 +153,7 @@ def process_market(market, target_date):
             vol_int = 0
 
         payload = {
-            "symbol": db_symbol,        # DB の symbol と一致させる
+            "symbol": db_symbol,
             "marketType": db_symbol,
             "timestamp": ts_str,
             "open": float(row['Open']) if row.get('Open') is not None else None,
@@ -152,6 +163,7 @@ def process_market(market, target_date):
             "volume": vol_int
         }
         send_candle(payload)
+        sent_timestamps.add(ts_str)
 
         if db_symbol == "米長期金利":
             try:
