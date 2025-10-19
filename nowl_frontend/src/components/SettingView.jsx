@@ -18,11 +18,16 @@ const SettingView = ({ formData, emailVerified, twoFactorEnabled, setCurrentView
           </div>
           <div className="flex justify-between">
             <span className="text-[#8A7A6A]">アカウント作成日</span>
-            <span className="text-[#D4B08C]">2024/12/23</span>
+            <span className="text-[#D4B08C]">
+              {formData?.createdAt ? new Date(formData.createdAt).toLocaleDateString() : "-"}
+            </span>
           </div>
+
           <div className="flex justify-between">
             <span className="text-[#8A7A6A]">最終ログイン</span>
-            <span className="text-[#D4B08C]">2024/12/23 17:45</span>
+            <span className="text-[#D4B08C]">
+              {formData?.lastLogin ? new Date(formData.lastLogin).toLocaleString() : "-"}
+            </span>
           </div>
         </div>
         <div className="space-y-3">
