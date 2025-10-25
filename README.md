@@ -476,7 +476,11 @@ and stores the data into the economic_events table in PostgreSQL.
 https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm にアクセスしてHTMLを取得。
 
 2. **年ごとの会合を抽出 / Parse Yearly Panels**
-各年度ごとの <div class="panel panel-default"> からFOMCスケジュールを解析。
+各年度ごとの 
+```
+<div class="panel panel-default"> 
+```
+からFOMCスケジュールを解析。
 
 3. **会合ごとの詳細取得 / Extract Meeting Details**
 	-	開催年月日（例：2025年7月30日）
@@ -544,6 +548,125 @@ scheduled weekly (e.g., every Monday at 8:00 JST).
    → Summary display in Nowl’s macro insight section
 
 ---
+
+# 🧾 投資主体別データ更新モジュール | Investor-Type Data Update Module
+
+**ファイル名 / Filename:**
+`nowl-python/update_investor_flow.py`
+
+### 🧠 概要 / Overview
+
+このモジュールは、JPX（日本取引所グループ） の公式サイトから
+投資主体別売買動向（投資部門別売買状況）PDF を自動取得し、
+各主体（個人・海外投資家・法人・金融機関など）の「売り・買い」データを抽出して
+PostgreSQL の investor_flow テーブルへ保存します。
+
+This module automatically retrieves the Investor Type Trading Trends PDF
+from the official JPX (Japan Exchange Group) website,
+extracts the weekly buy/sell volumes by investor category (Individuals, Foreigners, Institutions, etc.),
+and stores the data into the investor_flow table in PostgreSQL.
+
+---
+
+### 🔧 主な仕様 / Specifications
+
+| 項目 / Item | 内容 / Description |
+|-------------|--------------------|
+| **データソース / Data Source** | JPX公式サイト（投資部門別売買状況）https://www.jpx.co.jp/markets/statistics-equities/investor-type/ |
+| **保存先 / Storage** | PostgreSQL (investor_flow table) |
+| **主要ライブラリ / Libraries** | requests, BeautifulSoup4, camelot, pandas, databases, asyncio |
+| **対象データ / Target Data** | 投資主体別の売買動向（自己・委託・個人・海外・法人・金融機関など） |
+| **PDF構造解析 / PDF Parsing** | Camelotを使用して表データを自動抽出 |
+
+---
+
+### ⚙️ 主な処理フロー / Processing Flow
+
+1. **JPX公式ページへアクセス / Access JPX Investor Type Page**
+	-	投資部門別売買状況ページから最新のPDFリンクを取得。
+
+2. **PDFファイルの正規化 / Normalize PDF Links**
+   -  Chrome拡張由来のURL（chrome-extension://）も正規化して取得可能に。
+
+3. **最新週のPDFを判定 / Detect Latest Weekly Report**
+   -  ファイル名の「YYMMWW」形式（例：250902）から週次コードを抽出。
+
+4. **CamelotでPDFテーブルを抽出 / Extract Tables via Camelot**
+```
+tables = camelot.read_pdf("latest_investor_flow.pdf", pages="all")
+```
+すべてのページを走査し、投資主体ごとの売買データを収集。
+
+5. **投資主体の分類と集計 / Classify and Aggregate Investor Types**
+   -  以下の主体を対象にグルーピングして合計値を算出。
+
+| 投資主体 / Investor Type | 対応ラベル / Keywords |
+|-------------|--------------------|
+| **Proprietary** | 自己計 / Proprietary |
+| **Brokerage** | 委託計 / Brokerage |
+| **Individuals** | 個人 / Individuals |
+| **Foreigners** | 海外投資家 / Foreigners |
+| **Secutities Cos.** | 証券会社 / Securities Cos. |
+| **Insitutions** | 法人 / Institutions |
+| **Financials** | 金融機関 / Financials |
+
+6. **PostgreSQLへUpsert / Upsert into PostgreSQL**
+   -  ON CONFLICT (date, investor_type) により
+      - 既存データは更新、新規データは挿入。
+      - 更新日時 (updated_at) も自動で記録。
+
+---
+
+### 🗃️ 関連テーブル / Related Table
+
+Table: investor_flow
+
+| カラム名 / Column | 説明 / Description |
+|-------------|--------------------|
+| **date** | データ対象週の日付（週始まり） / Week start date |
+| **investor_type** |投資主体区分（個人・海外・法人など） / Investor category |
+| **market_2** | 第2市場（例：東証プライム）の売買高 / Market 2 trade volume |
+| **real_deli** | 実際の受渡ベースの売買高 / Real delivery trade volume |
+| **updated_at** | 更新日時 / Timestamp of last update |
+
+---
+
+### 🕐 実行方法 / How to Run
+
+```
+# 最新のJPX投資主体別PDFを取得してDBに保存
+python update_investor_flow.py
+```
+
+実行後、コンソールに以下のような出力が表示されます：
+
+```
+Latest PDF URL: https://www.jpx.co.jp/.../250902.pdf
+PDF downloaded: latest_investor_flow.pdf
+Investor flow data updated for week starting 2025-09-08!
+```
+
+---
+
+### 📊 出力イメージ / Output Example
+
+| date | investor_type | | market_2 | real_deli |
+|-------------|--------|--------|--------|
+| 2025-09-08 | Individuals | 125430 | -158920 |
+| 2025-09-08 | Foreigners | -342000 | 281500 |
+| 2025-09-08 | Institutions | 48000 | -29000 |
+| 2025-09-08 | Financials | -22000 | 17000 |
+
+---
+
+### 🔁 自動実行（予定） / Automation (Planned)
+
+•  スケジュール: 毎週金曜 18:00 JST に自動更新（cron or Airflow）
+•	Nowl連携: ダッシュボード上で主体別売買フローの時系列チャート表示
+•	将来拡張:
+   -  海外主要市場（NYSE/Nasdaq）の投資主体別データとの比較
+   -  投資家フローと指数（日経225・TOPIX・S&P500）の相関分析
+   -  Nowl AIモジュールによる主体別センチメント推定（例：「海外投資家のリスクオン傾向」）
 
 
 © 2025 Owlione / Nowl Project
