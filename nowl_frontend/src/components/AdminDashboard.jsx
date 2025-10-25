@@ -8,6 +8,7 @@ import SentimentMeter from "./SentimentMeter";
 import BottomNav from "./BottomNav";
 import TokyoStockInvestor from "./TokyoStockInvestor";
 import Statusbar from "./Statusbar";
+import { EconomicEventsList } from "./EconomicEventsList";
 
 export default function AdminDashboard() {
   const [calendarView, setCalendarView] = useState("TODAY");
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
           </div>
           <Nowlproposals/>
           <EconomicCalendar />
+          <EconomicEventsList />
         </div>
 
         {/* ステータスバー */}
