@@ -661,9 +661,9 @@ Investor flow data updated for week starting 2025-09-08!
 
 ### 🔁 自動実行（予定） / Automation (Planned)
 
-•  スケジュール: 毎週金曜 18:00 JST に自動更新（cron or Airflow）
-•	Nowl連携: ダッシュボード上で主体別売買フローの時系列チャート表示
-•	将来拡張:
+**スケジュール: 毎週金曜 18:00 JST に自動更新（cron or Airflow）**
+**Nowl連携: ダッシュボード上で主体別売買フローの時系列チャート表示**
+**将来拡張:**
    -  海外主要市場（NYSE/Nasdaq）の投資主体別データとの比較
    -  投資家フローと指数（日経225・TOPIX・S&P500）の相関分析
    -  Nowl AIモジュールによる主体別センチメント推定（例：「海外投資家のリスクオン傾向」）
