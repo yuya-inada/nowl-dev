@@ -77,10 +77,11 @@ export default function CompositeChart() {
   };
 
   const [selectedChartIndices, setSelectedChartIndices] = useState([
+    "日経先物(CME:USD)",
+    "日経先物(CME:Yen)",
     "N225",
-    "NYダウ",
     "S&P500",
-    "NASDAQ",
+    "米長期金利",
   ]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
