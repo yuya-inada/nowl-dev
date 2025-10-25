@@ -61,7 +61,7 @@ We will update progress logs and UI designs here as development proceeds.
 ---
 
 ### 🧠 概要 / Overview
-このモジュールは、主要な株価指数・為替・暗号資産などの市場データを  
+このモジュールは、主要な株価指数・為替・暗号資産・CME先物などの市場データを  
 自動的に取得・整形し、FastAPI経由でNowlのデータベースに送信します。  
 
 This module automatically collects and structures real-time and historical market data  
@@ -75,7 +75,7 @@ and sends them to the Nowl database through the FastAPI backend.
 | 項目 / Item | 内容 / Description |
 |-------------|--------------------|
 | **データソース / Data Source** | Yahoo Finance (`yfinance`), Alpaca API (planned) |
-| **対象市場 / Target Markets** | Nikkei 225, TOPIX, USD/JPY, EUR/JPY, S&P500, NASDAQ, BTC/USD, etc. |
+| **対象市場 / Target Markets** | Nikkei225, TOPIX, USD/JPY, EUR/JPY, S&P500, NASDAQ, BTC/USD, CME_NKD_USD, CME_NIY_YEN etc. |
 | **データ粒度 / Data Interval** | 1分足 (`1m`)（過去データ）<br>リアルタイム更新機能も将来実装予定 |
 | **保存先 / Storage** | PostgreSQL / TimescaleDB |
 | **送信API / API Endpoint** | `POST /market-index-candles`（FastAPI側） |
@@ -88,12 +88,14 @@ and sends them to the Nowl database through the FastAPI backend.
 1. **市場リストの定義 / Market List Definition**
    ```python
    MARKETS = [
-       {"symbol": "^N225", "marketType": "N225"},
-       {"symbol": "^TPX", "marketType": "TOPIX"},
-       {"symbol": "JPY=X", "marketType": "USD/JPY"},
-       {"symbol": "BTC-USD", "marketType": "BTC/USD"},
-       {"symbol": "^GSPC", "marketType": "S&P500"},
-       {"symbol": "^TNX", "marketType": "米長期金利"},
+      {"symbol": "^N225", "marketType": "N225"},
+      {"symbol": "^TPX", "marketType": "TOPIX"},
+      {"symbol": "JPY=X", "marketType": "USD/JPY"},
+      {"symbol": "BTC-USD", "marketType": "BTC/USD"},
+      {"symbol": "^GSPC", "marketType": "S&P500"},
+      {"symbol": "^TNX", "marketType": "米長期金利"},
+      {"symbol": "NKD=F", "marketType": "CME_NKD_USD"},
+      {"symbol": "NIY=F", "marketType": "CME_NIY_YEN"},
    ]
 
 2. **データ取得 / Fetch Historical Data**
@@ -134,116 +136,6 @@ python fetch_market_data_full.py --start-date 2025-10-07
 ```
 python fetch_market_data_full.py --start-date 2025-09-01 --end-date 2025-09-05
 ```
-
-# 📉 CME先物データ取得  / CME Futures Collector 
-
-**ファイル:**  
-`nowl-python/fetch_cme_futures_full.py`
-
----
-
-### 🧠 概要 / Overview**
-このモジュールは、CME（シカゴ・マーカンタイル取引所）の先物データ（例：日経平均先物など）を
-自動的に取得し、Nowl のデータベースに送信します。
-1分足データが利用できない場合は日足を自動的に使用します。
-
-This module automatically fetches CME futures data (e.g., Nikkei futures)
-and sends them to the Nowl database through FastAPI.
-If minute-level data are unavailable, it falls back to daily candles.
-
----
-
-### 🔧 主な仕様 / Specifications
-
-| 項目 / Item | 内容 / Description |
-|-------------|--------------------|
-| **データソース / Data Source** | Yahoo Finance (`yfinance`)|
-| **対象市場 / Target Markets** | Nikkei 225 USD (NKD=F), Nikkei 225 JPY (NIY=F) |
-| **データ粒度 / Data Interval** | 1分足 (`1m`)（過去データ）<br>リアルタイム更新機能も将来実装予定 |
-| **保存先 / Storage** | PostgreSQL / TimescaleDB |
-| **送信API / API Endpoint** | `POST /market-index-candles`（FastAPI側） |
-| **最新データ取得 / Latest API** | `GET /market-index-candles/latest`（重複防止） |
-| **リトライ回数 / Retry Limit** | 3回（送信失敗時） |
-
----
-
-### ⚙️ 主な処理フロー / Processing Flow
-
-1. **対象銘柄の定義 / Define Futures List**
-```
-CME_FUTURES = [
-    {"symbol": "NKD=F", "marketType": "CME_NKD_USD"},
-    {"symbol": "NIY=F", "marketType": "CME_NIY_YEN"},
-]
-```
-2. **データ取得 / Fetch Candles**
-```
-data = yf.Ticker(symbol).history(period="5d", interval="1m")
-```
-- 1分足 (1m) を優先的に取得
-- 取得できない場合は interval="1d" で日足に切り替え
-- すべての時刻を JST に変換
-
-3.	**最新データの比較 / Compare with Latest**
-```
-latest_ts = get_latest_timestamp(symbol, market_type)
-if latest_ts and ts_str <= latest_ts:
-    continue
-```
-- FastAPI /market-index-candles/latest で最新のtimestampを取得
-- 重複データをスキップ
-
-4. **送信 / Send to API**
-```
-payload = {
-    "symbol": symbol,
-    "marketType": market_type,
-    "timestamp": ts_str,
-    "open": float(row['Open']),
-    "high": float(row['High']),
-    "low": float(row['Low']),
-    "close": float(row['Close']),
-    "volume": int(row['Volume']),
-    "granularity": granularity
-}
-send_candle(payload)
-```
-- JSON形式でFastAPIに送信
-- ステータス200が返らない場合は3回までリトライ
-
----
-
-### 🕐 実行方法 / How to Run
-指定なし（直近データ取得）
-```
-python fetch_cme_futures_full.py
-```
-日付を指定して取得（例：2025年9月8日以降）
-```
-python fetch_cme_futures_full.py 2025-09-08
-```
-
----
-
-### 🗃️ 出力データ例 / Example Payload
-```
-{
-  "symbol": "NKD=F",
-  "marketType": "CME_NKD_USD",
-  "timestamp": "2025-10-09T07:30:00",
-  "open": 42920.0,
-  "high": 42980.0,
-  "low": 42850.0,
-  "close": 42910.0,
-  "volume": 1542,
-  "granularity": "1m"
-}
-```
-
-### 🔁 今後の拡張 / Future Enhancements
--	取引時間外データの除外フィルタ
--	自動スケジューリング（cron / Airflow / Prefect）対応
--	取引ボリュームと指数の相関分析（AI分析連携）
 
 ---
 
