@@ -4,7 +4,7 @@ export default function Statusbar() {
   return (
     <div className="space-y-2 py-4">
       {/* ④ システム情報 */}
-      <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
+      <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl mb-4">
         <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A]">
           <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">
             SYSTEM STATUS
