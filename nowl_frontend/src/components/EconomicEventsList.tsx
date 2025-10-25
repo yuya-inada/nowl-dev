@@ -8,7 +8,12 @@ export const EconomicEventsList = () => {
   const [activeTab, setActiveTab] = useState<"statement" | "press" | "projection">("statement");
 
   useEffect(() => {
-    fetchEconomicEvents().then(setEvents).catch(console.error);
+    fetchEconomicEvents()
+      .then((data) => {
+        console.log(data); // <- ここでtext_contentなどがあるか確認
+        setEvents(data);
+      })
+      .catch(console.error);
   }, []);
 
   return (
