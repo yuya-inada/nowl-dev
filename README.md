@@ -650,8 +650,8 @@ Investor flow data updated for week starting 2025-09-08!
 
 ### 📊 出力イメージ / Output Example
 
-| date | investor_type | | market_2 | real_deli |
-|-------------|--------|--------|--------|
+| date | investor_type | market_2 | real_deli |
+|------|----------------|-----------|------------|
 | 2025-09-08 | Individuals | 125430 | -158920 |
 | 2025-09-08 | Foreigners | -342000 | 281500 |
 | 2025-09-08 | Institutions | 48000 | -29000 |
