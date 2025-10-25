@@ -1,14 +1,18 @@
 // src/api/economicEvents.ts
+// src/api/economicEvents.ts
 export interface EconomicEvent {
-  event_date: string;
-  country_code: string;
-  event_name: string;
-  statement_pdf_url?: string | null;
-  press_conf_url?: string | null;
-  minutes_pdf_url?: string | null;
-  projection_pdf_url?: string | null;
-  text_content?: string | null;
-  description?: string | null;
+  id: number;
+  event_date: string;          // 'YYYY-MM-DD'
+  country_code: string;        // 'US' など
+  event_name: string;          // 'FOMC' など
+  description?: string;        // Statement; Press Conference; ...
+  created_at?: string;         // DB 登録日時
+  statement_pdf_url?: string;
+  press_conf_url?: string;
+  minutes_pdf_url?: string;
+  projection_pdf_url?: string;
+  text_content?: string;
+  text_extracted?: string;
 }
 
 // 実際にAPIから取得
