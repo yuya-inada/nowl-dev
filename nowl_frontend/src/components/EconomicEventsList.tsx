@@ -1,4 +1,3 @@
-// src/components/EconomicEventsList.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { fetchEconomicEvents, EconomicEvent } from "../api/economicEvents";
 
@@ -17,12 +16,10 @@ export const EconomicEventsList = () => {
       .catch(console.error);
   }, []);
 
-  // フィルタ適用
   const filtered = events.filter((e) =>
     e.event_name.toUpperCase().includes(filter.toUpperCase())
   );
 
-  // 最新の過去イベントを中央付近にスクロール
   useEffect(() => {
     if (listRef.current && filtered.length) {
       const today = new Date();
@@ -30,17 +27,23 @@ export const EconomicEventsList = () => {
         (e) => new Date(e.event_date) <= today
       );
       if (latestPastIndex >= 0) {
-        const itemHeight = 66; // li の高さ目安
+        const itemHeight = 66;
         listRef.current.scrollTop = Math.max(itemHeight * (latestPastIndex - 2), 0);
       }
     }
   }, [filtered]);
 
   return (
-    <div className="bg-[#2A2A2A] p-4 rounded-lg space-y-4">
-      <h2 className="text-xl font-bold">金融イベント</h2>
+    <div className="bg-[#2A2A2A] rounded shadow-xl">
+      {/* ==== HEADER ==== */}
+      <div className="bg-[#3A3A3A] w-full px-4 py-2 border-b border-[#4A4A4A]">
+        <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide text-left">
+          ECONOMIC EVENTS
+        </h2>
+      </div>
 
-      <div className="flex gap-4">
+      {/* ==== BODY ==== */}
+      <div className="flex gap-4 h-[580px] p-4">
         {/* 左：イベントリスト */}
         <div className="w-1/3 border-r border-[#555] pr-2 flex flex-col">
           {/* フィルタボタン */}
@@ -60,8 +63,8 @@ export const EconomicEventsList = () => {
             ))}
           </div>
 
-          {/* 日付リスト */}
-          <ul ref={listRef} className="overflow-y-auto max-h-[400px]">
+          {/* イベント一覧 */}
+          <ul ref={listRef} className="overflow-y-auto flex-1">
             {filtered.map((e) => {
               const eventDate = new Date(e.event_date);
               const today = new Date();
@@ -93,18 +96,18 @@ export const EconomicEventsList = () => {
         </div>
 
         {/* 右：選択イベント詳細 */}
-        <div className="w-2/3 p-2">
+        <div className="w-2/3 flex flex-col p-2">
           {selected ? (
-            <div className="bg-[#1F1F1F] p-4 rounded-lg shadow-md space-y-4">
+            <div className="bg-[#1F1F1F] p-4 rounded-lg shadow-md flex flex-col h-full">
               {/* ヘッダー */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-bold">{selected.event_name}</h3>
                 <span className="text-sm text-[#AAAAAA]">{selected.event_date}</span>
               </div>
-              <p className="text-sm text-[#AAAAAA]">国: {selected.country_code}</p>
+              <p className="text-sm text-[#AAAAAA] mb-2">国: {selected.country_code}</p>
 
               {/* タブボタン */}
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mb-2">
                 <button
                   className={`px-3 py-1 rounded text-sm ${
                     activeTab === "statement"
@@ -139,9 +142,10 @@ export const EconomicEventsList = () => {
                 </button>
               </div>
 
-              {/* タブ内容 */}
-              <div className="mt-2 p-2 bg-[#2A2A2A] rounded max-h-[300px] overflow-y-auto text-sm whitespace-pre-wrap">
-                {activeTab === "statement" && (selected.text_content || "ステートメントのテキストはありません。")}
+              {/* タブ内容（スクロール領域） */}
+              <div className="flex-1 overflow-y-auto bg-[#2A2A2A] rounded p-2 text-sm whitespace-pre-wrap">
+                {activeTab === "statement" &&
+                  (selected.text_content || "ステートメントのテキストはありません。")}
                 {activeTab === "press" &&
                   (selected.press_conf_url ? (
                     <a
@@ -170,13 +174,13 @@ export const EconomicEventsList = () => {
                   ))}
               </div>
 
-              {/* ステートメントPDFリンク */}
+              {/* ステートメントPDFリンク（下部固定） */}
               {selected.statement_pdf_url && (
                 <a
                   href={selected.statement_pdf_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-2 px-3 py-1 bg-[#D4B08C] text-[#1C1C1C] rounded hover:bg-[#e6c88a] text-sm"
+                  className="mt-2 px-3 py-1 bg-[#D4B08C] text-[#1C1C1C] rounded hover:bg-[#e6c88a] text-sm self-start"
                 >
                   Statement PDF
                 </a>
