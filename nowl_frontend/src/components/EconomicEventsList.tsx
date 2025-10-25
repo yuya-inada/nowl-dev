@@ -5,20 +5,27 @@ export const EconomicEventsList = () => {
   const [events, setEvents] = useState<EconomicEvent[]>([]);
   const [selected, setSelected] = useState<EconomicEvent | null>(null);
   const [activeTab, setActiveTab] = useState<"statement" | "press" | "projection">("statement");
-  const [filter, setFilter] = useState<string>("FOMC");
+  const [filter, setFilter] = useState<string>("");
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     fetchEconomicEvents()
       .then((data) => {
         setEvents(data);
+  
+        const today = new Date();
+        const latestPastEvent = data
+          .filter(e => new Date(e.event_date) <= today)
+          .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())[0];
+  
+        if (latestPastEvent) setSelected(latestPastEvent);
       })
       .catch(console.error);
   }, []);
 
-  const filtered = events.filter((e) =>
-    e.event_name.toUpperCase().includes(filter.toUpperCase())
-  );
+  const filtered = filter
+  ? events.filter((e) => e.event_name === filter)
+  : events;
 
   useEffect(() => {
     if (listRef.current && filtered.length) {
@@ -27,11 +34,18 @@ export const EconomicEventsList = () => {
         (e) => new Date(e.event_date) <= today
       );
       if (latestPastIndex >= 0) {
-        const itemHeight = 66;
+        const itemHeight = 30;
         listRef.current.scrollTop = Math.max(itemHeight * (latestPastIndex - 2), 0);
       }
     }
   }, [filtered]);
+  const eventNameMap: Record<string, string> = {
+    "BOJ Minutes": "日銀金融政策議事要旨",
+    "FOMC": "FOMC",
+    "ECB": "ECB",
+    "Jackson Hole": "ジャクソンホール",
+    // 他も必要なら追加
+  };
 
   return (
     <div className="bg-[#2A2A2A] rounded shadow-xl">
@@ -45,25 +59,35 @@ export const EconomicEventsList = () => {
       {/* ==== BODY ==== */}
       <div className="flex gap-4 h-[580px] p-4">
         {/* 左：イベントリスト */}
-        <div className="w-1/3 border-r border-[#555] pr-2 flex flex-col">
+        <div className="w-1/4 border-r border-[#555] pr-2 flex flex-col">
           {/* フィルタボタン */}
           <div className="flex flex-wrap gap-2 mb-2">
-            {["FOMC", "日銀", "ECB", "ジャクソンホール", "その他"].map((name) => (
+            <button
+              key="All"
+              onClick={() => setFilter("")}
+              className={`px-2 py-1 rounded text-sm transition ${
+                filter === "" ? "bg-[#8B4513] text-[#D4B08C]" : "bg-[#333] hover:bg-[#444] text-[#CCC]"
+              }`}
+            >
+              All
+            </button>
+
+            {Array.from(new Set(events.map((e) => e.event_name))).map((name) => (
               <button
                 key={name}
                 onClick={() => setFilter(name)}
                 className={`px-2 py-1 rounded text-sm transition ${
                   filter === name
-                    ? "bg-[#FFD700] text-black"
+                    ? "bg-[#8B4513] text-[#D4B08C]"
                     : "bg-[#333] hover:bg-[#444] text-[#CCC]"
                 }`}
               >
-                {name}
+                {eventNameMap[name] || name}
               </button>
             ))}
           </div>
 
-          {/* イベント一覧 */}
+          {/* イベントリスト */}
           <ul ref={listRef} className="overflow-y-auto flex-1">
             {filtered.map((e) => {
               const eventDate = new Date(e.event_date);
@@ -82,13 +106,20 @@ export const EconomicEventsList = () => {
                     setActiveTab("statement");
                   }}
                 >
-                  <div className="text-sm flex justify-between items-center">
-                    <span>{e.event_date}</span>
-                    {isFuture && (
-                      <span className="text-[#FFD700] text-xs ml-2">Upcoming</span>
-                    )}
+                  <div className="flex items-center justify-between text-sm">
+                    {/* 左：日付 */}
+                    <span className="w-1/4">{e.event_date}</span>
+
+                    {/* 中央：イベント名称 */}
+                    <span className="w-2/4 font-semibold text-left pl-2">
+                      {eventNameMap[e.event_name] || e.event_name}
+                    </span>
+
+                    {/* 右：Upcoming */}
+                    <span className="w-1/4 text-right text-[#FFD700] text-xs">
+                      {isFuture ? "Upcoming" : ""}
+                    </span>
                   </div>
-                  <div className="font-semibold">{e.event_name}</div>
                 </li>
               );
             })}
@@ -96,22 +127,22 @@ export const EconomicEventsList = () => {
         </div>
 
         {/* 右：選択イベント詳細 */}
-        <div className="w-2/3 flex flex-col p-2">
+        <div className="w-3/4 flex flex-col p-2">
           {selected ? (
             <div className="bg-[#1F1F1F] p-4 rounded-lg shadow-md flex flex-col h-full">
               {/* ヘッダー */}
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold">{selected.event_name}</h3>
-                <span className="text-sm text-[#AAAAAA]">{selected.event_date}</span>
+              <div className="flex items-center mb-2">
+                <p className="text-3xl font-bold">{eventNameMap[selected.event_name] || selected.event_name}</p>
+                <p className="text-sm text-[#AAAAAA] ml-3">{selected.event_date}</p>
+                <p className="text-sm text-[#AAAAAA] ml-3">国: {selected.country_code}</p>
               </div>
-              <p className="text-sm text-[#AAAAAA] mb-2">国: {selected.country_code}</p>
 
               {/* タブボタン */}
-              <div className="flex gap-2 mb-2">
+              <div className="flex gap-2 mb-3">
                 <button
                   className={`px-3 py-1 rounded text-sm ${
                     activeTab === "statement"
-                      ? "bg-[#D4B08C] text-[#1C1C1C]"
+                      ? "bg-[#8B4513] text-[#D4B08C]"
                       : "bg-[#333] text-[#CCC]"
                   }`}
                   onClick={() => setActiveTab("statement")}
@@ -121,7 +152,7 @@ export const EconomicEventsList = () => {
                 <button
                   className={`px-3 py-1 rounded text-sm ${
                     activeTab === "press"
-                      ? "bg-[#8CC4D4] text-[#1C1C1C]"
+                      ? "bg-[#8B4513] text-[#D4B08C]"
                       : "bg-[#333] text-[#CCC]"
                   }`}
                   onClick={() => setActiveTab("press")}
@@ -132,7 +163,7 @@ export const EconomicEventsList = () => {
                 <button
                   className={`px-3 py-1 rounded text-sm ${
                     activeTab === "projection"
-                      ? "bg-[#A3D48D] text-[#1C1C1C]"
+                      ? "bg-[#8B4513] text-[#D4B08C]"
                       : "bg-[#333] text-[#CCC]"
                   }`}
                   onClick={() => setActiveTab("projection")}
@@ -143,7 +174,7 @@ export const EconomicEventsList = () => {
               </div>
 
               {/* タブ内容（スクロール領域） */}
-              <div className="flex-1 overflow-y-auto bg-[#2A2A2A] rounded p-2 text-sm whitespace-pre-wrap">
+              <div className="flex-1 overflow-y-auto bg-[#2A2A2A] rounded p-2 pl-10 text-base whitespace-pre-wrap text-left mb-1">
                 {activeTab === "statement" &&
                   (selected.text_content || "ステートメントのテキストはありません。")}
                 {activeTab === "press" &&
@@ -180,7 +211,7 @@ export const EconomicEventsList = () => {
                   href={selected.statement_pdf_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 px-3 py-1 bg-[#D4B08C] text-[#1C1C1C] rounded hover:bg-[#e6c88a] text-sm self-start"
+                  className="mt-2 px-3 py-1 bg-[#8B4513] text-[#D4B08C] rounded hover:bg-[#e6c88a] text-sm self-start"
                 >
                   Statement PDF
                 </a>
