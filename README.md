@@ -549,7 +549,109 @@ scheduled weekly (e.g., every Monday at 8:00 JST).
 
 ---
 
-# 🧾 投資主体別データ更新モジュール | Investor-Type Data Update Module
+# 🏦 日銀金融政策決定会合議事要旨データ取得 / BOJ Minutes Scraper
+
+**ファイル名 / Filename:**
+`nowl-python/economic_data/events/fetch_boj.py`
+
+### 🧠 概要 / Overview
+
+このモジュールは、日本銀行（Bank of Japan, BOJ）の公式サイトから
+「金融政策決定会合議事要旨（Minutes of the Monetary Policy Meeting）」を自動取得し、
+全文テキストを抽出した上で PostgreSQL の economic_events テーブルに保存します。
+
+This module automatically scrapes the official Bank of Japan website to retrieve
+the Minutes of the Monetary Policy Meeting (BOJ Minutes),
+extracts full text from the linked PDF or HTML files,
+and stores the data into the economic_events table in PostgreSQL.
+
+---
+
+### 🔧 主な仕様 / Specifications
+
+| 項目 / Item | 内容 / Description |
+|-------------|--------------------|
+| **データソース / Data Source** | 日本銀行 公式サイト - 議事要旨ページ |
+| **保存先/Storage** | PostgreSQL（テーブル：economic_events） |
+| **主要ライブラリ / Libraries** | requests, BeautifulSoup4, pdfplumber, psycopg2, dotenv |
+| **抽出対象 / Target Data** | 公表日、開催日、議事要旨PDF（またはHTML）URL、全文テキスト |
+| **PDFテキスト抽出 / PDF Text Extraction** | pdfplumber を使用し全文テキストを抽出 |
+| **既存データチェック / Duplicate Check** | 同一URLが既に登録済みの場合はスキップ |
+
+---
+
+### ⚙️ 主な処理フロー / Processing Flow
+
+1.	**BOJ公式ページへアクセス / Access BOJ Minutes Page**
+   - 以下URLへリクエストを送信し、HTMLを取得：
+   - https://www.boj.or.jp/mopo/mpmsche_minu/minu_2025/index.htm
+2.	**議事要旨リストを解析 / Parse Table of Minutes**
+   - <テーブル/table> 要素を走査し、公表日・開催日・リンクURLを抽出。
+   - リンクが存在しない（＝未発表）場合はスキップ。
+3.	**リンク種別の判定 / Determine Link Type**
+   - .pdf → PDFをダウンロードして pdfplumber でテキスト抽出
+   - .html → BeautifulSoupで本文テキストを抽出
+4.	**日付処理 / Parse Event Date**
+   - 開催日欄から「○月○日」形式の最初の日付を抽出し、
+   - datetime.strptime(f"{date_match} 2025", "%m月%d日 %Y") で変換。
+5.	**PostgreSQLへ保存 / Save to PostgreSQL**
+   - 抽出したイベントを economic_events テーブルへ保存。
+   - 同一の event_date + event_name が存在する場合はスキップ（ON CONFLICT DO NOTHING）。
+
+---
+
+### 🗃️ 関連テーブル / Related Table
+
+Table: economic_events
+
+| カラム名 / Column | 説明 / Description |
+|-------------|--------------------|
+| **event_date** | 開催日 / Meeting date |
+| **country_code** | 国コード / Country code |
+| **event_name** | イベント名（例：BOJ Munutes）/ Event name |
+| **description** | 概要（例：「日銀金融政策決定会合議事要旨2025年⚪︎月⚪︎日」）|
+| **statement_pdf_url** | 議事要旨PDFまたはHTMLのURL / Statement PDF or HTML URL |
+| **text_content** | 議事要旨の全文テキスト / Extracted minutes text |
+| **press_conf_url** | 記者会見URL（該当ない場合NULL） |
+| **minutes_pdf_url** | 議事要旨PDF URL |
+| **projection_pdf_url** | 経済見通し資料 |
+
+---
+
+### 🕐 実行方法 / How to Run
+```
+# BOJ議事要旨を取得してDBに保存
+python fetch_boj.py
+```
+実行後、コンソールに以下のように出力されます：
+```
+7月分の議事要旨は既に登録済みです
+8月分の議事要旨テキストは取得できませんでした
+2 件のBOJ議事要旨イベントを保存しました
+```
+
+---
+
+### 🔁 自動実行（予定） / Automation (Planned)
+
+- スケジュール: 月1回（毎月末）自動で新規議事要旨を取得予定
+   → cron または Airflow で定期実行
+- NLP分析統合: 抽出テキストの自然言語処理を行い、
+   → Sentiment（政策トーン）やTopic（論点）分類をNowl内で可視化予定。
+- Nowlホーム画面連携:
+   → 取得済み議事要旨を「政策発表イベント」一覧に自動反映予定。
+
+---
+
+### 🧾 備考 / Notes
+
+- BOJサイトでは年ごとにページが分かれているため、年が変わる際は
+   → BOJ_MINUTES_URL の年度部分（例：minu_2026）を更新する必要がある。
+- 一部月はリンク未公開のためスキップされる場合がある。
+
+---
+
+# 🧾 投資主体別売買動向データ更新モジュール | Investor-Type Data Update Module
 
 **ファイル名 / Filename:**
 `nowl-python/update_investor_flow.py`
