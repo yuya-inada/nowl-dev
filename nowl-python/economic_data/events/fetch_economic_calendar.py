@@ -209,7 +209,7 @@ def save_calendar_to_db(events):
                 actual_value, forecast_value, previous_value,
                 status, importance, category, last_updated)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
-                ON CONFLICT (event_date, country_code, indicator_name)
+                ON CONFLICT ON CONSTRAINT unique_event_entry
                 DO UPDATE SET
                     event_datetime = EXCLUDED.event_datetime,
                     actual_value = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
@@ -229,13 +229,16 @@ def save_calendar_to_db(events):
                 e["actual_value"], e["forecast_value"], e["previous_value"],
                 e["status"], e["importance"], e["category"]
             ))
-            # RETURNING xmax で0なら新規、0でなければ更新
             xmax_val = cur.fetchone()[0]
             if xmax_val == 0:
                 inserted += 1
             else:
                 updated += 1
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            print("⚠️ 一意制約違反:", e["indicator_name"])
         except Exception as ex:
+            conn.rollback()
             print("DB挿入エラー:", ex)
             print("対象データ:", e)
 
@@ -288,6 +291,9 @@ if __name__ == "__main__":
         ("timeFrame_nextWeek", today)
     ]:
         events = fetch_economic_calendar_by_tab(tab, base_day)
+        if len(events) == 0 and tab == "timeFrame_nextWeek":
+            print("⚠️ 来週分はまだ公開されていません。スキップします。")
+            continue
         print(f"🌍 [JA] {tab} 取得中: {ECONOMIC_CALENDAR_URL}")
         inserted, updated = save_calendar_to_db(events)
         print(f"{tab}：\n新規取得　{inserted} 件\n更新　　　{updated} 件\n")
