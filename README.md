@@ -583,20 +583,20 @@ and stores the data into the economic_events table in PostgreSQL.
 ### ⚙️ 主な処理フロー / Processing Flow
 
 1.	**BOJ公式ページへアクセス / Access BOJ Minutes Page**
-   - 以下URLへリクエストを送信し、HTMLを取得：
-   - https://www.boj.or.jp/mopo/mpmsche_minu/minu_2025/index.htm
+   -  以下URLへリクエストを送信し、HTMLを取得：
+   -  https://www.boj.or.jp/mopo/mpmsche_minu/minu_2025/index.htm
 2.	**議事要旨リストを解析 / Parse Table of Minutes**
-   - <テーブル/table> 要素を走査し、公表日・開催日・リンクURLを抽出。
-   - リンクが存在しない（＝未発表）場合はスキップ。
+   -  <テーブル/table> 要素を走査し、公表日・開催日・リンクURLを抽出。
+   -  リンクが存在しない（＝未発表）場合はスキップ。
 3.	**リンク種別の判定 / Determine Link Type**
-   - .pdf → PDFをダウンロードして pdfplumber でテキスト抽出
-   - .html → BeautifulSoupで本文テキストを抽出
+   -  .pdf → PDFをダウンロードして pdfplumber でテキスト抽出
+   -  .html → BeautifulSoupで本文テキストを抽出
 4.	**日付処理 / Parse Event Date**
-   - 開催日欄から「○月○日」形式の最初の日付を抽出し、
-   - datetime.strptime(f"{date_match} 2025", "%m月%d日 %Y") で変換。
+   -  開催日欄から「○月○日」形式の最初の日付を抽出し、
+   -  datetime.strptime(f"{date_match} 2025", "%m月%d日 %Y") で変換。
 5.	**PostgreSQLへ保存 / Save to PostgreSQL**
-   - 抽出したイベントを economic_events テーブルへ保存。
-   - 同一の event_date + event_name が存在する場合はスキップ（ON CONFLICT DO NOTHING）。
+   -  抽出したイベントを economic_events テーブルへ保存。
+   -  同一の event_date + event_name が存在する場合はスキップ（ON CONFLICT DO NOTHING）。
 
 ---
 
