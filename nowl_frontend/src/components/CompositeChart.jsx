@@ -86,7 +86,7 @@ export default function CompositeChart() {
   const periods = ["1M", "3M", "6M", "1Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
   const timeframes = ["1m","2m","3m","4m","5m","10m","15m","30m","60m","1d","1w","1M"];
-  const [selectedTimeframe, setSelectedTimeframe] = useState("60m");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
   const [candlesMap, setCandlesMap] = useState({});
 
   const colors = {
