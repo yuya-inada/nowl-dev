@@ -1,5 +1,5 @@
 # nowl-dev
-資産運用AI「Nowl」の開発用リポジトリ  
+資産運用AI「Nowl™️（商標出願中）」の開発用リポジトリ  
 Development repository for the asset management AI system **Nowl**
 
 ---
