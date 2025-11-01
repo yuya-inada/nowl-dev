@@ -82,6 +82,8 @@ export default function CompositeChart() {
     "N225",
     "S&P500",
     "米長期金利",
+    "10年期待インフレ率",
+    "実質金利",
   ]);
   const periods = ["1M", "3M", "6M", "1Y", "5Y", "6Y", "7Y", "8Y", "9Y", "10Y"];
   const [chartPeriod, setChartPeriod] = useState("1M");
