@@ -1,3 +1,7 @@
+import sys
+# ✅ Pythonパスを追加して nowl-python 内のスケジューラをインポートできるようにする
+sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
+
 import os
 from fastapi import FastAPI, Query, HTTPException
 from contextlib import asynccontextmanager
@@ -10,8 +14,8 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
 from typing import List, Optional, Dict
-from routers import economic_events
-from routers import event_analysis
+from nowl_backend.routers import economic_events, event_analysis
+from economic_data.events.schedule import initialize_scheduler
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -23,11 +27,24 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set. Check your .env file")
 database = Database(DATABASE_URL)
 
+# ✅ スケジューラ初期化（アプリ起動時に自動実行）
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # DB接続
     await database.connect()
+    print("✅ DB Connected")
+
+    # 🚀 スケジューラ初期化（アプリ起動時に自動実行）
+    from economic_data.events.schedule import initialize_scheduler
+    print("🚀 Starting scheduler for economic data automation...")
+    initialize_scheduler()
+
+    # yield の後はアプリ終了時処理
     yield
+
+    # DB切断
     await database.disconnect()
+    print("🛑 DB Disconnected")
 
 # --------------------------
 # FastAPI インスタンス
