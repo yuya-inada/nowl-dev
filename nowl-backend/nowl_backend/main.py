@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import calendar
 from typing import List, Optional, Dict
 from routers import economic_events
+from routers import event_analysis
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -45,6 +46,7 @@ app.add_middleware(
 )
 
 app.include_router(economic_events.router)
+app.include_router(event_analysis.router, prefix="/analysis", tags=["Event Analysis"])
 
 # --------------------------
 # ルート確認
