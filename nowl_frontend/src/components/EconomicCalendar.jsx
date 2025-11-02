@@ -258,7 +258,6 @@ const EconomicCalendar = () => {
       <div className="p-4">
         {/* === TODAY VIEW === */}
         {calendarView === "TODAY" && (
-          // 👇（ここは完全にそのまま）
           <div>
             <div className="sticky top-0 z-10 bg-[#2A2A2A] border-b border-[#4A4A4A] px-4 py-2 mb-2">
               <div className="flex items-center justify-center space-x-4 mb-4">
@@ -280,58 +279,72 @@ const EconomicCalendar = () => {
               </div>
             </div>
             {(economicCalendar.TODAY || []).length === 0 ? (
-              <div className="text-[#8A7A6A] text-center py-4">No data for this day.</div>
+                <div className="text-[#8A7A6A] text-center text-3xl py-4">
+                  No data for this day.
+                </div>
             ) : (
               <div className="space-y-1">
-                {/* ヘッダー */}
-                <div className="grid grid-cols-[50px_80px_80px_1fr_150px_150px_150px] gap-2 text-xs text-[#8A7A6A] font-semibold border-b border-[#3A3A3A] pb-1">
-                  <div className="text-center">Importance</div>
-                  <div className="text-center">Time</div>
-                  <div className="text-center">Country</div>
-                  <div>Event Name</div>
-                  <div className="text-center">Result</div>
-                  <div className="text-center">Prediction</div>
-                  <div className="text-center">Previous</div>
+                {/* === ヘッダー（固定） === */}
+                <div className="sticky top-0 z-10 bg-[#2A2A2A]">
+                  <div className="grid grid-cols-[50px_80px_80px_1fr_150px_150px_150px] gap-2 text-xs text-[#8A7A6A] font-semibold border-b border-[#3A3A3A] pb-1">
+                    <div className="text-center">Importance</div>
+                    <div className="text-center">Time</div>
+                    <div className="text-center">Country</div>
+                    <div>Event Name</div>
+                    <div className="text-center">Result</div>
+                    <div className="text-center">Prediction</div>
+                    <div className="text-center">Previous</div>
+                  </div>
                 </div>
-
-                {/* イベント行 */}
-                {(economicCalendar.TODAY || []).map((event, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-cols-[50px_80px_80px_1fr_150px_150px_150px] gap-2 text-sm text-[#D4B08C] border-b border-[#3A3A3A] py-1 items-center"
-                  >
-                    {/* 重要度の丸 */}
-                    <span
-                      className={`w-2 h-2 rounded-full justify-self-center ${
-                        event.importance === "HIGH"
-                          ? "bg-red-500"
-                          : event.importance === "MEDIUM"
-                          ? "bg-yellow-500"
-                          : "bg-gray-500"
-                      }`}
-                    ></span>
-
-                    {/* 時間 */}
-                    <div className="text-[#8A7A6A] text-base text-center">{event.time}</div>
-
-                    {/* 国 */}
-                    <div className="text-sm font-semibold text-[#D4B08C] text-center">{event.country}</div>
-
-                    {/* イベント名 */}
-                    <div className="text-base text-left">{event.event}</div>
-
-                    {/* 結果 */}
-                    <div className={`text-base font-semibold text-center ${event.result === "-" ? "text-[#8A7A6A]" : "text-[#D4B08C]"}`}>
+            
+                {/* === イベントリスト（スクロール領域） === */}
+                  <div className="h-[500px] overflow-y-auto pr-2"> 
+                  {(economicCalendar.TODAY || []).map((event, i) => (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[50px_80px_80px_1fr_150px_150px_150px] gap-2 text-sm text-[#D4B08C] border-b border-[#3A3A3A] py-1 items-center"
+                    >
+                     {/* 重要度の丸 */}
+                      <span
+                        className={`w-2 h-2 rounded-full justify-self-center ${
+                          event.importance === "HIGH"
+                            ? "bg-red-500"
+                            : event.importance === "MEDIUM"
+                            ? "bg-yellow-500"
+                            : "bg-gray-500"
+                        }`}
+                      ></span>
+            
+                      {/* 時間 */}
+                      <div className="text-[#8A7A6A] text-base text-center">{event.time}</div>
+            
+                      {/* 国 */}
+                      <div className="text-sm font-semibold text-[#D4B08C] text-center">{event.country}</div>
+            
+                      {/* イベント名 */}
+                      <div className="text-base text-left">{event.event}</div>
+            
+                      {/* 結果 */}
+                      <div
+                        className={`text-base font-semibold text-center ${
+                          event.result === "-" ? "text-[#8A7A6A]" : "text-[#D4B08C]"
+                        }`}
+                      >
                       {event.result}
                     </div>
-
+            
                     {/* 予想 */}
-                    <div className="text-base text-center">{event.forecast}</div>
-
+                    <div className="text-base text-center">
+                      {event.forecast}
+                    </div>
+            
                     {/* 前回 */}
-                    <div className="text-base text-center">{event.previous}</div>
+                    <div className="text-base text-center">
+                      {event.previous}
+                    </div>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </div>
@@ -362,38 +375,40 @@ const EconomicCalendar = () => {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-5 gap-2">
-              {weeklyCalendar.days.map((day, idx) => (
-                <div key={idx} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2">
-                  <div className="text-center mb-2">
-                    <div className="text-lg font-semibold text-[#D4B08C]">{day.day}</div>
-                    <div className="text-lg text-[#8A7A6A]">{day.date}</div>
+            <div className="h-[500px] overflow-y-auto">
+              <div className="grid grid-cols-5 gap-2">
+                {weeklyCalendar.days.map((day, idx) => (
+                  <div key={idx} className="bg-[#3A3A3A] border border-[#4A4A4A] rounded p-2">
+                    <div className="text-center mb-2">
+                      <div className="text-lg font-semibold text-[#D4B08C]">{day.day}</div>
+                      <div className="text-lg text-[#8A7A6A]">{day.date}</div>
+                    </div>
+                    <hr className="mb-3 border-t-2 border-[#8A7A6A]" />
+                    <div className="space-y-1">
+                      {day.events.map((ev, i) => (
+                        <div key={i} className="flex items-start text-xs text-[#D4B08C]">
+                          {/* 重要度丸アイコン */}
+                          <span
+                            className={`w-2 h-2 rounded-full mt-0.5 ${
+                              ev.importance === "HIGH"
+                                ? "bg-red-500"
+                                : ev.importance === "MEDIUM"
+                                ? "bg-yellow-500"
+                                : "bg-gray-500"
+                            }`}
+                          ></span>
+                          
+                          {/* 時間 */}
+                          <span className="text-[#8A7A6A] ml-1">{ev.time}</span>
+                          
+                          {/* イベント名 */}
+                          <span className="pl-2 text-left">{ev.event}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <hr className="mb-3 border-t-2 border-[#8A7A6A]" />
-                  <div className="space-y-1">
-                    {day.events.map((ev, i) => (
-                      <div key={i} className="flex items-start text-xs text-[#D4B08C]">
-                        {/* 重要度丸アイコン */}
-                        <span
-                          className={`w-2 h-2 rounded-full mt-0.5 ${
-                            ev.importance === "HIGH"
-                              ? "bg-red-500"
-                              : ev.importance === "MEDIUM"
-                              ? "bg-yellow-500"
-                              : "bg-gray-500"
-                          }`}
-                        ></span>
-                        
-                        {/* 時間 */}
-                        <span className="text-[#8A7A6A] ml-1">{ev.time}</span>
-                        
-                        {/* イベント名 */}
-                        <span className="pl-2 text-left">{ev.event}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
