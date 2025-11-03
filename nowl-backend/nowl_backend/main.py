@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     print("✅ DB Connected")
 
     # 🚀 スケジューラ初期化（アプリ起動時に自動実行）
-    from economic_data.events.schedule import initialize_scheduler
+    # from economic_data.events.schedule import initialize_scheduler
     print("🚀 Starting scheduler for economic data automation...")
     initialize_scheduler()
 
