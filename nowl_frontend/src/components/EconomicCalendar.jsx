@@ -94,7 +94,7 @@ const EconomicCalendar = () => {
   // ✅ WEEK API
   const fetchWeek = async (baseDate) => {
     try {
-      const dateStr = toDateStr(baseDate);
+      const dateStr = toJSTDateStr(baseDate);
       const res = await fetch(`http://localhost:8081/economic-calendar/week?date=${dateStr}`);
       if (!res.ok) throw new Error("HTTP error");
       const data = await res.json();

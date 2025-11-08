@@ -128,152 +128,72 @@ def fetch_economic_calendar_by_tab(tab_id: str, base_day: date):
         browser.close()
     return events
 
-# # --------------------------
-# # 英語版からカテゴリー取得
-# # --------------------------
-# def fetch_category_from_english(tab_id: str):
-#     categories = []
-#     with sync_playwright() as p:
-#         browser = p.chromium.launch(headless=True, args=["--window-size=1920,1080"])
-#         page = browser.new_page()
-#         page.set_extra_http_headers({"Accept-Language": "en-US,en;q=0.9"})
-#         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
-#         url = "https://www.investing.com/economic-calendar/"
-#         print(f"🌍 [EN] {tab_id} 取得中: {url}")
-#         page.goto(url, timeout=180000, wait_until="domcontentloaded")
-
-#         tab = page.query_selector(f"a#{tab_id}")
-#         if tab:
-#             tab.click()
-#             page.wait_for_timeout(3500)
-#         else:
-#             print(f"❌ {tab_id} が見つかりません")
-#             browser.close()
-#             return []
-
-#         # スクロールで追加読み込み
-#         previous_count = 0
-#         while True:
-#             rows = page.query_selector_all("tr.js-event-item")
-#             current_count = len(rows)
-#             if current_count == previous_count:
-#                 break
-#             previous_count = current_count
-#             page.evaluate("window.scrollBy(0, document.body.scrollHeight)")
-#             page.wait_for_timeout(2500)
-
-#         rows = page.query_selector_all("tr.js-event-item")
-#         for row in rows:
-#             try:
-#                 dt_attr = row.get_attribute("data-event-datetime")
-#                 if dt_attr:
-#                     dt = datetime.strptime(dt_attr, "%Y/%m/%d %H:%M:%S")
-#                 else:
-#                     time_text = row.query_selector("td.time").inner_text().strip() if row.query_selector("td.time") else "00:00"
-#                     t = datetime.strptime(time_text, "%H:%M").time()
-#                     dt = datetime.combine(date.today(), t)
-
-#                 indicator = _clean(row.query_selector("td.event").inner_text()) if row.query_selector("td.event") else None
-#                 category = _clean(row.query_selector("td.eventCategory").inner_text()) if row.query_selector("td.eventCategory") else None
-
-#                 if indicator and category:
-#                     categories.append({
-#                         "event_datetime": dt,
-#                         "indicator_name": indicator,
-#                         "category": category,
-#                     })
-#             except Exception as e:
-#                 print("行解析エラー:", e)
-#                 continue
-
-#         browser.close()
-#     return categories
-
 # --------------------------
 # DB保存（新規 / 更新 件数分け）
 # --------------------------
 def save_calendar_to_db(events):
     if not events:
         print("保存対象データなし")
-        return 0, 0  # 新規, 更新
+        return 0, 0, 0  # 新規, 更新, スキップ
+
     conn = psycopg2.connect(**DB_PARAMS)
     cur = conn.cursor()
     inserted = 0
     updated = 0
+    skipped = 0
+
     for e in events:
         try:
             cur.execute("""
                 INSERT INTO economic_calendar
                 (event_datetime, event_date, country_code, indicator_name,
-                actual_value, forecast_value, previous_value,
-                status, importance, category, last_updated)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
-                ON CONFLICT ON CONSTRAINT unique_event_entry
+                 actual_value, forecast_value, previous_value,
+                 status, importance, category, last_updated)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (country_code, indicator_name, event_date)
                 DO UPDATE SET
-                    event_datetime = EXCLUDED.event_datetime,
-                    actual_value = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
+                    actual_value   = COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value),
                     forecast_value = COALESCE(NULLIF(EXCLUDED.forecast_value, ''), economic_calendar.forecast_value),
                     previous_value = COALESCE(NULLIF(EXCLUDED.previous_value, ''), economic_calendar.previous_value),
                     status = CASE
-                                WHEN COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value) IS NOT NULL THEN '結果あり'
+                                WHEN COALESCE(NULLIF(EXCLUDED.actual_value, ''), economic_calendar.actual_value) IS NOT NULL
+                                THEN '結果あり'
                                 ELSE '未発表'
-                            END,
-                    importance = EXCLUDED.importance,
-                    category = COALESCE(EXCLUDED.category, economic_calendar.category),
-                    last_updated = NOW()
-                RETURNING xmax
+                             END,
+                    importance     = EXCLUDED.importance,
+                    category       = COALESCE(EXCLUDED.category, economic_calendar.category),
+                    last_updated   = NOW()
+                RETURNING xmax = 0
             """, (
-                e["event_datetime"], e["event_datetime"].date(),
-                e["country_code"], e["indicator_name"],
-                e["actual_value"], e["forecast_value"], e["previous_value"],
-                e["status"], e["importance"], e["category"]
+                e["event_datetime"],
+                e["event_datetime"].date(),
+                e["country_code"],
+                e["indicator_name"],
+                e["actual_value"],
+                e["forecast_value"],
+                e["previous_value"],
+                e["status"],
+                e["importance"],
+                e["category"]
             ))
-            xmax_val = cur.fetchone()[0]
-            if xmax_val == 0:
+            is_new = cur.fetchone()[0]  # Trueなら新規、Falseなら更新
+            if is_new:
                 inserted += 1
             else:
                 updated += 1
         except psycopg2.errors.UniqueViolation:
+            skipped += 1
             conn.rollback()
-            print("⚠️ 一意制約違反:", e["indicator_name"])
         except Exception as ex:
             conn.rollback()
-            print("DB挿入エラー:", ex)
+            print("DB保存エラー:", ex)
             print("対象データ:", e)
+        else:
+            conn.commit()
 
-    conn.commit()
     cur.close()
     conn.close()
-    return inserted, updated
-
-# # --------------------------
-# # DBに英語版カテゴリー更新
-# # --------------------------
-# def update_category_to_db(categories):
-#     if not categories:
-#         print("カテゴリー更新対象なし")
-#         return
-#     conn = psycopg2.connect(**DB_PARAMS)
-#     cur = conn.cursor()
-#     updated = 0
-#     for c in categories:
-#         try:
-#             cur.execute("""
-#                 UPDATE economic_calendar
-#                 SET category = %s
-#                 WHERE indicator_name = %s AND event_datetime = %s
-#             """, (
-#                 c["category"], c["indicator_name"], c["event_datetime"]
-#             ))
-#             updated += cur.rowcount
-#         except Exception as ex:
-#             print("DB更新エラー:", ex)
-#             print("対象データ:", c)
-#     conn.commit()
-#     cur.close()
-#     conn.close()
-#     print(f"✅ {updated} 件のカテゴリーを更新しました")
+    return inserted, updated, skipped
 
 # --------------------------
 # 実行
@@ -295,13 +215,8 @@ if __name__ == "__main__":
             print("⚠️ 来週分はまだ公開されていません。スキップします。")
             continue
         print(f"🌍 [JA] {tab} 取得中: {ECONOMIC_CALENDAR_URL}")
-        inserted, updated = save_calendar_to_db(events)
-        print(f"{tab}：\n新規取得　{inserted} 件\n更新　　　{updated} 件\n")
+        inserted, updated, skipped = save_calendar_to_db(events)
+        print(f"{tab}：\n新規取得　{inserted} 件\n更新　　　{updated} 件\nスキップ　{skipped} 件\n")
         all_events.extend(events)
 
     print(f"合計: {len(all_events)} 件をDB保存")
-
-    # # 英語版からカテゴリー取得（全体を対象）
-    # categories = fetch_category_from_english("timeFrame_thisWeek")
-    # print(f"{len(categories)} 件のカテゴリー取得")
-    # update_category_to_db(categories)
