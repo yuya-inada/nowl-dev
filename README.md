@@ -27,6 +27,16 @@ Development repository for the asset management AI system **Nowl**
 
 ---
 
+## ⚠️ NowlのMVP開発段階でのスクレイピング利用
+
+- 現段階では、研究開発目的として、公開情報から一部自動データ取得を行っています。
+   → At this stage, we are conducting partial automated data acquisition from publicly available information for research and development purposes.
+
+- 商用利用・再配布は行わず、将来的には公的API・ライセンスデータソースに完全移行予定です。
+   → We do not engage in commercial use or redistribution, and we plan to fully transition to public APIs and licensed data sources in the future.
+
+---
+
 ## ⚙️ 技術スタック（予定） / Tech Stack (Planned)
 - Frontend: React  
 - Backend: Spring Boot / FastAPI  
@@ -397,6 +407,16 @@ and stores them in PostgreSQL for AI analysis and UI display.
    - 重要度（LOW / MEDIUM / HIGH）/ Importance  
 4. PostgreSQLへUpsert（既存データの自動更新）  
    → Insert or update existing records automatically  
+
+---
+
+## ⚠️ NowlのMVP開発段階でのスクレイピング利用
+
+- 現段階では、研究開発目的として、公開情報から一部自動データ取得を行っています。
+   → At this stage, we are conducting partial automated data acquisition from publicly available information for research and development purposes.
+
+- 商用利用・再配布は行わず、将来的には公的API・ライセンスデータソースに完全移行予定です。
+   → We do not engage in commercial use or redistribution, and we plan to fully transition to public APIs and licensed data sources in the future.
 
 ---
 
@@ -773,6 +793,18 @@ Investor flow data updated for week starting 2025-09-08!
    -  海外主要市場（NYSE/Nasdaq）の投資主体別データとの比較
    -  投資家フローと指数（日経225・TOPIX・S&P500）の相関分析
    -  Nowl AIモジュールによる主体別センチメント推定（例：「海外投資家のリスクオン傾向」）
+
+---
+
+## ⚠️ NowlのMVP開発段階でのスクレイピング利用
+
+- 現段階では、研究開発目的として、公開情報から一部自動データ取得を行っています。
+   → At this stage, we are conducting partial automated data acquisition from publicly available information for research and development purposes.
+
+- 商用利用・再配布は行わず、将来的には公的API・ライセンスデータソースに完全移行予定です。
+   → We do not engage in commercial use or redistribution, and we plan to fully transition to public APIs and licensed data sources in the future.
+
+---
 
 
 © 2025 Owlione / Nowl Project
