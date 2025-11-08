@@ -8,6 +8,7 @@ import SentimentMeter from "./SentimentMeter";
 import BottomNav from "./BottomNav";
 import TokyoStockInvestor from "./TokyoStockInvestor";
 import Statusbar from "./Statusbar";
+import { EconomicEventsList } from "./EconomicEventsList";
 
 export default function UserDashboard() {
   const [calendarView, setCalendarView] = useState("TODAY");
@@ -18,7 +19,7 @@ export default function UserDashboard() {
       <TopNav />
 
       {/* 本体コンテンツ：ヘッダー分のパディングを確保 */}
-      <div className="pt-[10px] w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="pt-[10px] w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-4">Welcome, User!</h1>
         <p className="mb-6">Here is your personal dashboard.</p>
 
@@ -42,6 +43,7 @@ export default function UserDashboard() {
           </div>
           <Nowlproposals/>
           <EconomicCalendar />
+          <EconomicEventsList />
         </div>
 
         {/* ステータスバー */}

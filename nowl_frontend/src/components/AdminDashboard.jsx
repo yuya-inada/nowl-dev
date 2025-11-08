@@ -35,7 +35,7 @@ export default function AdminDashboard({ currentUser }) {  // ← propsで受け
           <Nowlproposals/>
           {/* currentUser を props で受け取っているのでここで参照可能 */}
           <EconomicCalendar currentUser={currentUser} />
-          <EconomicEventsList />
+          <EconomicEventsList currentUser={currentUser} />
         </div>
 
         <Statusbar />

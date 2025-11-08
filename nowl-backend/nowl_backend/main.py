@@ -1,7 +1,4 @@
 import sys
-sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
-sys.path.append("/Users/inadayuuya/nowl-dev")
-
 import os
 from fastapi import FastAPI, Query, HTTPException, Depends
 from contextlib import asynccontextmanager
@@ -15,10 +12,12 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
 
+# path調整
+sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
+sys.path.append("/Users/inadayuuya/nowl-dev")
+
 from nowl_backend.routers import economic_events, event_analysis
 from economic_data.events.schedule import initialize_scheduler
-
-from pydantic import BaseModel
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -30,41 +29,45 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set. Check your .env file")
 database = Database(DATABASE_URL)
 
-# ✅ スケジューラ初期化（アプリ起動時に自動実行）
+# --------------------------
+# FastAPI インスタンス
+# --------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # DB接続
     await database.connect()
     print("✅ DB Connected")
 
-    # 🚀 スケジューラ初期化（アプリ起動時に自動実行）
-    # from economic_data.events.schedule import initialize_scheduler
-    print("🚀 Starting scheduler for economic data automation...")
-    initialize_scheduler()
+    # 開発時の uvicorn --reload での二重起動防止
+    if os.environ.get("RUN_MAIN") == "true":
+        print("🚀 Starting scheduler for economic data automation...")
+        initialize_scheduler()
 
-    # yield の後はアプリ終了時処理
-    yield
+    yield  # アプリ終了時の処理へ
 
-    # DB切断
     await database.disconnect()
     print("🛑 DB Disconnected")
 
-# --------------------------
-# FastAPI インスタンス
-# --------------------------
 app = FastAPI(lifespan=lifespan)
 
 # --------------------------
 # CORS 設定
 # --------------------------
+origins = [
+    "http://localhost:5173",  # フロントのURL
+    "http://127.0.0.1:5173",  # 念のため
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,  # アクセス許可するオリジン
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],     # GET, POST など全て許可
+    allow_headers=["*"],     # ヘッダーも全て許可
 )
 
+# --------------------------
+# ルーター登録
+# --------------------------
 app.include_router(economic_events.router)
 app.include_router(event_analysis.router, prefix="/analysis", tags=["Event Analysis"])
 
@@ -74,12 +77,6 @@ app.include_router(event_analysis.router, prefix="/analysis", tags=["Event Analy
 @app.get("/")
 async def root():
     return {"message": "Nowl FastAPI backend is running!"}
-
-@app.get("/dbtest")
-async def db_test():
-    query = "SELECT 1"
-    result = await database.fetch_one(query)
-    return {"result": result}
 
 # --------------------------
 # チャート用データ取得
@@ -697,3 +694,39 @@ async def get_event_sync_logs(limit: int = 10):
     """
     rows = await database.fetch_all(query=query, values={"limit": limit})
     return [dict(r) for r in rows]
+
+
+# --------------------------
+# 経済イベントログモデル
+# --------------------------
+# EconomicEventLog モデル
+class EconomicEventLog(BaseModel):
+    id: int
+    event_datetime: Optional[date] = None
+    log_time: Optional[datetime] = None
+    event_name: Optional[str] = None
+    status: Optional[str] = None
+    error_message: Optional[str] = None
+
+# --------------------------
+# 経済イベントログ取得 API
+# --------------------------
+@app.get("/api/economic-event-logs", response_model=List[EconomicEventLog])
+async def get_economic_event_logs(limit: int = 50):
+    """
+    経済イベント同期ログを取得（最新順）
+    """
+    query = """
+        SELECT id, event_name, event_datetime, status, error_message, log_time
+        FROM economic_event_logs
+        ORDER BY log_time DESC, id DESC
+        LIMIT :limit
+    """
+    try:
+        rows = await database.fetch_all(query=query, values={"limit": limit})
+        return [dict(r) for r in rows]
+    except Exception as e:
+        import traceback
+        print("🔥 /api/economic-event-logs エラー:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
