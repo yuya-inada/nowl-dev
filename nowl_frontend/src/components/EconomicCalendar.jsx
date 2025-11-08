@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch } from "../utils/api";
 
 export default function EconomicCalendar({ currentUser }) {
   // ---------------
@@ -226,7 +225,7 @@ export default function EconomicCalendar({ currentUser }) {
               to="/calendar/logs"
               className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
             >
-              Logs
+              Economic Logs
             </Link>
         )}
       </div>

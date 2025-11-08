@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { fetchEconomicEvents, EconomicEvent } from "../api/economicEvents";
+import { useNavigate } from "react-router-dom";
 
-export const EconomicEventsList = () => {
+export const EconomicEventsList = ({ currentUser }) => {
   const [events, setEvents] = useState<EconomicEvent[]>([]);
   const [selected, setSelected] = useState<EconomicEvent | null>(null);
   const [activeTab, setActiveTab] = useState<"statement" | "press" | "projection">("statement");
   const [filter, setFilter] = useState<string>("");
   const listRef = useRef<HTMLUListElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEconomicEvents()
@@ -50,10 +52,21 @@ export const EconomicEventsList = () => {
   return (
     <div className="bg-[#2A2A2A] rounded shadow-xl">
       {/* ==== HEADER ==== */}
-      <div className="bg-[#3A3A3A] w-full px-4 py-2 border-b border-[#4A4A4A]">
-        <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide text-left">
-          ECONOMIC EVENTS
-        </h2>
+      <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">
+            ECONOMIC EVENTS
+          </h2>
+          {/* 管理者以上のみ「ログ画面」ボタン表示 */}
+          {(currentUser?.role === "ROLE_ADMIN" || currentUser?.role === "ROLE_SUPERADMIN") && (
+            <button
+              onClick={() => navigate("/logs-economic-event")}
+              className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
+            >
+              Economic Event Logs
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ==== BODY ==== */}

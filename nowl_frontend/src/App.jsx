@@ -9,6 +9,7 @@ import TopNav from "./components/TopNav";
 import Register from "./pages/Register";
 import EconomicCalendar from "./components/EconomicCalendar";
 import LogsEconomicCalendar from "./components/Logs_economic_calendar";
+import LogsEconomicEvent from "./components/Logs_economic_event";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -170,6 +171,15 @@ export default function App() {
           {/* 経済カレンダー */}
           <Route path="/calendar" element={<EconomicCalendar />} />
           <Route path="/calendar/logs" element={<LogsEconomicCalendar />} />
+
+          <Route
+            path="/logs-economic-event"
+            element={
+              currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
+                ? <LogsEconomicEvent />
+                : <Navigate to="/" />
+            }
+          />
 
           {/* その他はホームにリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />
