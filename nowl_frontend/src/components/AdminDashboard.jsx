@@ -10,47 +10,35 @@ import TokyoStockInvestor from "./TokyoStockInvestor";
 import Statusbar from "./Statusbar";
 import { EconomicEventsList } from "./EconomicEventsList";
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ currentUser }) {  // ← propsで受け取る
   const [calendarView, setCalendarView] = useState("TODAY");
 
   return (
     <div className="min-h-screen bg-[#1C1C1C] text-[#D4B08C] font-hiragino-mincho">
-      {/* ヘッダー */}
       <TopNav />
 
-      {/* 本体コンテンツ: ヘッダー分のスペースを上に確保 */}
       <div className="pt-[10px] w-full mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl font-bold mb-4">Welcome, Admin!</h1>
         <p className="mb-6">Here you can manage users and system settings.</p>
 
-        {/* ダッシュボード主要コンテンツ */}
         <div className="space-y-6">
           <CompositeChart />
           <div className="grid grid-cols-12 gap-4">
-            {/* 左カラム：世界主要指数 */}
             <div className="col-span-4">
               <GlobalIndices />
             </div>
-
-            {/* 右カラム：上下に2つ */}
             <div className="col-span-8 space-y-4">
-              {/* 上：TokyoStockInvestor */}
               <TokyoStockInvestor/>
-
-              {/* 下：SentimentMeter */}
               <SentimentMeter />
             </div>
           </div>
           <Nowlproposals/>
-          <EconomicCalendar />
+          {/* currentUser を props で受け取っているのでここで参照可能 */}
+          <EconomicCalendar currentUser={currentUser} />
           <EconomicEventsList />
         </div>
 
-        {/* ステータスバー */}
         <Statusbar />
-
-        {/* フッター
-        <BottomNav /> */}
       </div>
     </div>
   );

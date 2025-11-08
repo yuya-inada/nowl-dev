@@ -10,7 +10,7 @@ const Dashboard = ({ currentUser}) => {
   return (
     <div className="font-crimson">
       {currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN" ? (
-        <AdminDashboard />
+        <AdminDashboard currentUser={currentUser} />
       ) : (
         <UserDashboard />
       )}
