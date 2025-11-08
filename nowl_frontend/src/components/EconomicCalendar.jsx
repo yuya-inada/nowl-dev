@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const weekdayMap = {
   0: "Sun",
@@ -15,20 +16,6 @@ const weekdayMap = {
   Friday: "Fri",
   Saturday: "Sat",
   Sunday: "Sun",
-  月曜日: "Mon",
-  火曜日: "Tue",
-  水曜日: "Wed",
-  木曜日: "Thu",
-  金曜日: "Fri",
-  土曜日: "Sat",
-  日曜日: "Sun",
-  月: "Mon",
-  火: "Tue",
-  水: "Wed",
-  木: "Thu",
-  金: "Fri",
-  土: "Sat",
-  日: "Sun",
 };
 
 
@@ -223,7 +210,15 @@ const EconomicCalendar = () => {
     <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
       {/* ==== HEADER ==== */}
       <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
+      <div className="flex items-center space-x-2">
         <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">ECONOMIC CALENDAR</h2>
+        <Link
+          to="/calendar/logs"
+          className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
+        >
+          Logs
+        </Link>
+      </div>
         <div className="flex space-x-1">
           <button
             onClick={() => setCalendarView("TODAY")}

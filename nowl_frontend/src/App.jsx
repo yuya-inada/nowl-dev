@@ -7,6 +7,8 @@ import jwtDecode from "jwt-decode";
 import SettingView from "./components/SettingView";
 import TopNav from "./components/TopNav";
 import Register from "./pages/Register";
+import EconomicCalendar from "./components/EconomicCalendar";
+import LogsEconomicCalendar from "./components/Logs_economic_calendar";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -164,6 +166,10 @@ export default function App() {
 
           {/* 🔹 新規登録画面 */}
           <Route path="/register" element={<Register />} />
+
+          {/* 経済カレンダー */}
+          <Route path="/calendar" element={<EconomicCalendar />} />
+          <Route path="/calendar/logs" element={<LogsEconomicCalendar />} />
 
           {/* その他はホームにリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />
