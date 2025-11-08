@@ -1,42 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../utils/api";
 
-const weekdayMap = {
-  0: "Sun",
-  1: "Mon",
-  2: "Tue",
-  3: "Wed",
-  4: "Thu",
-  5: "Fri",
-  6: "Sat",
-  Monday: "Mon",
-  Tuesday: "Tue",
-  Wednesday: "Wed",
-  Thursday: "Thu",
-  Friday: "Fri",
-  Saturday: "Sat",
-  Sunday: "Sun",
-};
+export default function EconomicCalendar({ currentUser }) {
+  // ---------------
+  // === 上部共通ユーティリティ ===
+  // ---------------
+  const isAdmin =
+    currentUser?.role === "ROLE_ADMIN" || currentUser?.role === "ROLE_SUPERADMIN";
+
+  const weekdayMap = {
+    0: "Sun",
+    1: "Mon",
+    2: "Tue",
+    3: "Wed",
+    4: "Thu",
+    5: "Fri",
+    6: "Sat",
+    Monday: "Mon",
+    Tuesday: "Tue",
+    Wednesday: "Wed",
+    Thursday: "Thu",
+    Friday: "Fri",
+    Saturday: "Sat",
+    Sunday: "Sun",
+  };
 
 
-// JST固定で日付文字列（YYYY-MM-DD）
-const toJSTDateStr = (d) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const date = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${date}`;
-};
+  // JST固定で日付文字列（YYYY-MM-DD）
+  const toJSTDateStr = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const date = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${date}`;
+  };
 
-// JST固定で時刻 HH:mm
-const fmtTime = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
-};
+  // JST固定で時刻 HH:mm
+  const fmtTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
 
-const EconomicCalendar = () => {
+// const EconomicCalendar = () => {
   const [calendarView, setCalendarView] = useState("TODAY");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [economicCalendar, setEconomicCalendar] = useState({ TODAY: [] });
@@ -212,12 +220,15 @@ const EconomicCalendar = () => {
       <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
       <div className="flex items-center space-x-2">
         <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">ECONOMIC CALENDAR</h2>
-        <Link
-          to="/calendar/logs"
-          className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
-        >
-          Logs
-        </Link>
+        {/* {🔑　管理者以上のみ「ログ画面」ボタン表示} */}
+        {isAdmin && (
+            <Link
+              to="/calendar/logs"
+              className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
+            >
+              Logs
+            </Link>
+        )}
       </div>
         <div className="flex space-x-1">
           <button
@@ -516,6 +527,4 @@ const EconomicCalendar = () => {
       </div>
     </div>
   );
-};
-
-export default EconomicCalendar;
+}
