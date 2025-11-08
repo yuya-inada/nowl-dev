@@ -1,21 +1,24 @@
 import sys
-# ✅ Pythonパスを追加して nowl-python 内のスケジューラをインポートできるようにする
 sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
+sys.path.append("/Users/inadayuuya/nowl-dev")
 
 import os
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends
 from contextlib import asynccontextmanager
 from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, date, time, timedelta
 import pytz
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
-from typing import List, Optional, Dict
+
 from nowl_backend.routers import economic_events, event_analysis
 from economic_data.events.schedule import initialize_scheduler
+
+from pydantic import BaseModel
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
 
@@ -522,7 +525,6 @@ async def get_calendar_day(date: str = Query(None, description="YYYY-MM-DD")):
     }
 
 
-
 # --------------------------
 # 週間単位の経済カレンダー
 # --------------------------
@@ -659,3 +661,39 @@ async def get_monthly_calendar(year: int = Query(...), month: int = Query(...)):
         weeks.append(current_week)
 
     return {"weeks": weeks}
+
+
+# --------------------------
+# Basic 認証（管理者チェック用）
+# --------------------------
+security = HTTPBasic()
+
+def get_current_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    if credentials.username != "admin":  # ここは本番用に適切に変更
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return credentials.username
+
+# --------------------------
+# 経済指標ログ取得（管理者用）
+# --------------------------
+# レスポンス用モデル
+class EventSyncLog(BaseModel):
+    id: int
+    executed_at: datetime
+    status: str
+    added_count: int
+    updated_count: int
+    deleted_count: int
+    duration_seconds: Optional[float]
+    error_message: Optional[str]
+    action: Optional[str]
+@app.get("/api/event-sync-logs", response_model=List[EventSyncLog])
+async def get_event_sync_logs(limit: int = 10):
+    query = """
+        SELECT *
+        FROM event_sync_logs
+        ORDER BY executed_at DESC
+        LIMIT :limit
+    """
+    rows = await database.fetch_all(query=query, values={"limit": limit})
+    return [dict(r) for r in rows]

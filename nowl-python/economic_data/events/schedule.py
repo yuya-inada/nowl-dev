@@ -38,25 +38,38 @@ def add_job_safe(func, trigger, job_id):
     if not any(job.id == job_id for job in scheduler.get_jobs()):
         scheduler.add_job(func, trigger=trigger, id=job_id)
         print(f"✅ ジョブ登録: {job_id}")
+        log_event_sync(status="INFO", action=f"ジョブ登録: {job_id}", duration=0)
     else:
         print(f"⚠️ ジョブ {job_id} は既に存在するためスキップ")
+        log_event_sync(status="INFO", action=f"ジョブ既存: {job_id}", duration=0)
 
 # --------------------------
 # データ取得処理
 # --------------------------
 def run_fetch_script():
-    print("🚀 経済指標データ更新開始...")
+    print("🚀 経済指標データ取得/更新開始...")
     start_time = time.time()
     try:
         subprocess.run(["python3", FETCH_SCRIPT_PATH], check=True)
         duration = time.time() - start_time
-        print("✅ 経済指標データ更新完了")
-        log_event_sync(status="SUCCESS", added=0, updated=0, deleted=0, duration=duration)
+        print("✅ 経済指標データ取得/更新完了")
+        log_event_sync(
+            status="SUCCESS",
+            added=0,
+            updated=0,
+            deleted=0,
+            duration=duration,
+            action="経済指標取得/更新"  # ここを追加
+        )
     except subprocess.CalledProcessError as e:
         duration = time.time() - start_time
-        print("❌ 経済指標更新エラー:", e)
-        log_event_sync(status="FAILED", error=str(e), duration=duration)
-
+        print("❌ 経済指標取得/更新エラー:", e)
+        log_event_sync(
+            status="FAILED",
+            error=str(e),
+            duration=duration,
+            action="経済指標取得/更新"  # ここも追加
+        )
 # --------------------------
 # イベントスケジュール
 # --------------------------
@@ -90,13 +103,14 @@ def load_upcoming_events():
 # スケジューラ初期化
 # --------------------------
 def initialize_scheduler():
+    log_event_sync(status="INFO", action="スケジューラ初期化", duration=0)
     print("🕒 経済指標スケジューラ初期化...")
+    
     run_fetch_script()  # 即時更新
 
     now = datetime.now(JST)
     events = load_upcoming_events()
     for event_datetime, name in events:
-        # 過去イベントは即時実行
         if event_datetime <= now:
             print(f"⏱ {name} は過去のイベントなので即時実行")
             run_fetch_script()
@@ -106,6 +120,7 @@ def initialize_scheduler():
     # 3時間ごとの再スキャンジョブ
     interval_trigger = IntervalTrigger(hours=3)
     add_job_safe(initialize_scheduler, interval_trigger, job_id="recheck_events")
+    log_event_sync(status="INFO", action="再スキャンジョブ登録", duration=0)
 
 # --------------------------
 # FastAPI 用スケジューラ起動
@@ -115,6 +130,7 @@ def start_scheduler():
         initialize_scheduler()
         scheduler.start()
         print("🛠 スケジューラ起動完了（FastAPI経由）")
+        log_event_sync(status="INFO", action="スケジューラー起動中", duration=0)
     else:
         print("⚠️ スケジューラはすでに起動中")
 

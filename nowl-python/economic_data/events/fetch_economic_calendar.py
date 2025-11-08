@@ -6,6 +6,9 @@ from datetime import datetime, date, timedelta, timezone
 from dotenv import load_dotenv
 import os
 import psycopg2
+import sys
+sys.path.append("/Users/inadayuuya/nowl-dev/nowl-backend")
+sys.path.append("/Users/inadayuuya/nowl-dev")
 
 # --------------------------
 # .env読み込みとDB接続情報
