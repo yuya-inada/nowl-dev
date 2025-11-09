@@ -37,22 +37,23 @@ def start_market_log(cur, market_name, symbol, interval):
     """, (market_name, symbol, interval, 'START'))
     return cur.fetchone()[0]
 
-def update_market_log(cur, log_id, status='SUCCESS', data_count=None, error_message=None):
+def update_market_log(cur, log_id, status='SUCCESS', data_count=None, error_message=None, market_datatime=None):
     cur.execute("""
         UPDATE market_data_logs
         SET fetch_end = now(),
             status = %s,
             data_count = %s,
             error_message = %s,
+            market_datatime = COALESCE(%s, market_datatime),
             log_time = now()
         WHERE id = %s
-    """, (status, data_count, error_message, log_id))
+    """, (status, data_count, error_message, market_datatime, log_id))
 
-def insert_info_log(cur, process_id, message, progress=0):
+def insert_info_log(cur, process_id, message, progress=0, market_datatime=None):
     cur.execute("""
-        INSERT INTO market_data_logs (market_name, symbol, interval, fetch_start, status, error_message, process_id, progress, created_at, log_time)
-        VALUES (%s, %s, %s, now(), %s, %s, %s, %s, now(), now())
-    """, ("SYSTEM", "INFO", "1m", "INFO", message, process_id, progress))
+        INSERT INTO market_data_logs (market_name, symbol, interval, fetch_start, status, error_message, process_id, progress, created_at, log_time, market_datatime)
+        VALUES (%s, %s, %s, now(), %s, %s, %s, %s, now(), now(), %s)
+    """, ("SYSTEM", "INFO", "1m", "INFO", message, process_id, progress, market_datatime))
 
 def insert_complete_log(cur, process_id):
     cur.execute("""
@@ -143,15 +144,14 @@ def send_candle(payload):
     return False
 
 # --- メイン処理 ---
-def process_market(market, target_date, conn):
+def process_market(market, target_date, conn, process_id, i, total):
     yf_symbol = market["symbol"]
     db_symbol = market["marketType"]
     interval = "1m"
     cur = conn.cursor()
-
     log_id = None
+
     try:
-        # ログ開始
         log_id = start_market_log(cur, market_name=db_symbol, symbol=yf_symbol, interval=interval)
         conn.commit()
 
@@ -162,6 +162,9 @@ def process_market(market, target_date, conn):
 
         if data is None or data.empty:
             update_market_log(cur, log_id, status="FAILED", data_count=0, error_message="データ空または取得失敗")
+            conn.commit()
+            insert_info_log(cur, process_id, f"{db_symbol} (⚠️{i}/{total}) データ取得失敗",
+                            progress=int(i/total*100), market_datatime=None)
             conn.commit()
             return
 
@@ -198,14 +201,28 @@ def process_market(market, target_date, conn):
                 sent_timestamps.add(ts_str)
                 sent_count += 1
 
-        # 成功
-        update_market_log(cur, log_id, status="SUCCESS", data_count=sent_count)
+        # data の処理が終わった後
+        if data is not None and not data.empty:
+            latest_dt = data.index.max()
+        else:
+            latest_dt = None
+
+        # SUCCESS 更新時に market_datatime を入れる
+        update_market_log(cur, log_id, status="SUCCESS", data_count=sent_count, market_datatime=latest_dt)
+        conn.commit()
+
+        # INFOログにも market_datatime を入れる
+        insert_info_log(cur, process_id, f"{db_symbol} (✅{i}/{total}) を取得完了",
+                        progress=int(i/total*100), market_datatime=latest_dt)
         conn.commit()
 
     except Exception as e:
         print(f"[{db_symbol}] エラー: {e}")
         if log_id:
             update_market_log(cur, log_id, status="FAILED", data_count=0, error_message=str(e))
+            conn.commit()
+            insert_info_log(cur, process_id, f"{db_symbol} (⚠️{i}/{total}) 取得中にエラー: {e}",
+                            progress=int(i/total*100), market_datatime=None)
             conn.commit()
     finally:
         cur.close()
@@ -223,7 +240,7 @@ if __name__ == "__main__":
 
     conn = psycopg2.connect(**DB_PARAMS)
     cur = conn.cursor()
-    process_id = uuid.uuid4()  # 👈 各実行単位ごとに固有ID発行
+    process_id = uuid.uuid4()
 
     current_day = start_day
     while current_day <= end_day:
@@ -232,16 +249,25 @@ if __name__ == "__main__":
 
         for i, market in enumerate(MARKETS, 1):
             progress = int(i / total * 100)
+            if i == total:
+                progress = 100
+
             insert_info_log(cur, process_id, f"現在 {market['marketType']} ({i}/{total}) を取得中...", progress)
             conn.commit()
 
             print(f">>> {market['marketType']} データ取得中...")
-            process_market(market, current_day, conn)
+            try:
+                process_market(market, current_day, conn, process_id, i, total)
+            except Exception as e:
+                error_message = str(e).replace("'", "")[:200]
+                insert_info_log(cur, process_id,
+                                f"{market['marketType']} (⚠️{i}/{total}) 取得中にエラー: {error_message}",
+                                progress)
+                conn.commit()
+                continue
 
-        # 1日分完了
         insert_complete_log(cur, process_id)
         conn.commit()
-
         current_day += timedelta(days=1)
 
     cur.close()

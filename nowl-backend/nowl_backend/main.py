@@ -11,6 +11,9 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
+from uuid import UUID
+from pydantic import BaseModel
+from typing import Optional
 
 # path調整
 sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
@@ -738,39 +741,62 @@ async def get_economic_event_logs(limit: int = 50):
 # ログモデル
 class MarketDataLog(BaseModel):
     id: int
-    market_name: Optional[str] = None
-    symbol: Optional[str] = None
-    status: Optional[str] = None
-    data_count: Optional[int] = None
-    fetch_start: Optional[datetime] = None
-    fetch_end: Optional[datetime] = None
-    error_message: Optional[str] = None
+    market_name: str
+    symbol: str
+    status: str
+    data_count: Optional[int]
+    fetch_start: Optional[datetime]   # ← str → datetime
+    fetch_end: Optional[datetime]     # ← str → datetime
+    error_message: Optional[str]
+    process_id: Optional[str]         # UUID を str に変換済み
+    progress: Optional[float]
+    market_datatime: Optional[datetime]
 
 @app.get("/api/market-data-logs/latest", response_model=List[MarketDataLog])
-async def get_latest_market_data_logs(limit: int = 50):
-    """
-    各 market_name ごとに最新の SUCCESS or FAILED ログを取得
-    """
-    query = """
-        SELECT DISTINCT ON (market_name, fetch_start)
-               id, market_name, symbol, status, data_count,
-               fetch_start, fetch_end, error_message
-        FROM market_data_logs
-        WHERE status IN ('SUCCESS', 'FAILED')
-        ORDER BY market_name, fetch_start DESC
-    """
-    rows = await database.fetch_all(query=query)
-    return [dict(r) for r in rows]
+async def get_latest_market_data_logs():
+    try:
+        query = f"""
+            SELECT l.id, l.market_name, l.symbol, l.status, l.data_count,
+                   l.fetch_start, l.fetch_end, l.error_message, l.process_id,
+                   l.progress, l.market_datatime
+            FROM market_data_logs l
+            INNER JOIN (
+                SELECT market_name, MAX(fetch_start) AS max_fetch_start
+                FROM market_data_logs
+                WHERE status IN ('SUCCESS', 'FAILED')
+                GROUP BY market_name
+            ) sub
+            ON l.market_name = sub.market_name AND l.fetch_start = sub.max_fetch_start
+            ORDER BY l.market_name;
+        """
+        rows = await database.fetch_all(query=query)
+        result = []
+        for r in rows:
+            r_dict = dict(r)
+            if r_dict.get("process_id"):
+                r_dict["process_id"] = str(r_dict["process_id"])
+            result.append(r_dict)
+        return result
+    except Exception as e:
+        import traceback
+        print("🔥 /api/market-data-logs/latest エラー:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/market-data-logs/info", response_model=List[MarketDataLog])
-async def get_info_market_data_logs(limit: int = 50):
+async def get_info_market_data_logs():
     query = """
-        SELECT id, market_name, symbol, status, fetch_start, fetch_end, error_message
+        SELECT *
         FROM market_data_logs
         WHERE status = 'INFO'
         ORDER BY fetch_start DESC
-        LIMIT :limit
     """
-    rows = await database.fetch_all(query=query, values={"limit": limit})
-    return [dict(r) for r in rows]
+    rows = await database.fetch_all(query=query)
+    result = []
+    for r in rows:
+        r_dict = dict(r)
+        if r_dict.get("process_id"):
+            r_dict["process_id"] = str(r_dict["process_id"])
+        result.append(r_dict)
+    return result
