@@ -22,7 +22,7 @@ export default function AdminDashboard({ currentUser }) {  // ← propsで受け
         <p className="mb-6">Here you can manage users and system settings.</p>
 
         <div className="space-y-6">
-          <CompositeChart />
+          <CompositeChart currentUser={currentUser} />
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-4">
               <GlobalIndices />

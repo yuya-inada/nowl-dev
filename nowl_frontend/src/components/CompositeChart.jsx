@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { Link } from "react-router-dom";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,7 +25,8 @@ ChartJS.register(
   TimeScale
 );
 
-export default function CompositeChart() {
+export default function CompositeChart({ currentUser }) {
+  const [showMarketLogs, setShowMarketLogs] = useState(false);
   const chartIndices = [
     "N225",
     "TOPIX",
@@ -292,15 +294,38 @@ export default function CompositeChart() {
     <div className="pt-24 p-4 space-y-4">
       <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
         {/* ヘッダー */}
-        <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
-          <h2 className="text-xl font-bold text-[#D4B08C] tracking-wide">COMPOSITE CHART ANALYSIS</h2>
-          {/* 期間ボタン */}
-          {/* プルダウン形式 */}
-          <div className="flex gap-2">
-            <select className="bg-[#4A4A4A] text-[#D4B08C] px-3 py-1 rounded" value={chartPeriod} onChange={e => setChartPeriod(e.target.value)}>
+        <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-xl font-bold text-[#D4B08C] tracking-wide">
+              COMPOSITE CHART ANALYSIS
+            </h2>
+
+            {/* 管理者以上のみリンク表示 */}
+            {["ROLE_ADMIN", "ROLE_SUPERADMIN"].includes(currentUser?.role) && (
+              <Link
+                to="/market-data-logs"
+                className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
+              >
+                Market Logs
+              </Link>
+            )}
+          </div>
+
+          {/* 期間・タイムフレームボタン */}
+          <div className="flex items-center gap-2">
+            <select
+              className="bg-[#4A4A4A] text-[#D4B08C] px-3 py-1 rounded"
+              value={chartPeriod}
+              onChange={e => setChartPeriod(e.target.value)}
+            >
               {periods.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            <select className="bg-[#4A4A4A] text-[#D4B08C] px-3 py-1 rounded" value={selectedTimeframe} onChange={e => setSelectedTimeframe(e.target.value)}>
+
+            <select
+              className="bg-[#4A4A4A] text-[#D4B08C] px-3 py-1 rounded"
+              value={selectedTimeframe}
+              onChange={e => setSelectedTimeframe(e.target.value)}
+            >
               {timeframes.map(tf => <option key={tf} value={tf}>{tf}</option>)}
             </select>
           </div>
