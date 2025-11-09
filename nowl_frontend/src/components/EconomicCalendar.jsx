@@ -217,18 +217,18 @@ export default function EconomicCalendar({ currentUser }) {
     <div className="bg-[#2A2A2A] border border-[#3A3A3A] rounded shadow-xl">
       {/* ==== HEADER ==== */}
       <div className="bg-[#3A3A3A] px-4 py-2 border-b border-[#4A4A4A] flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">ECONOMIC CALENDAR</h2>
-        {/* {🔑　管理者以上のみ「ログ画面」ボタン表示} */}
-        {isAdmin && (
-            <Link
-              to="/calendar/logs"
-              className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
-            >
-              Economic Logs
-            </Link>
-        )}
-      </div>
+        <div className="flex items-center space-x-2">
+          <h2 className="text-sm font-bold text-[#D4B08C] tracking-wide">ECONOMIC CALENDAR</h2>
+          {/* {🔑　管理者以上のみ「ログ画面」ボタン表示} */}
+          {isAdmin && (
+              <Link
+                to="/calendar/logs"
+                className="text-xs text-[#D4B08C] bg-[#4A4A4A] px-2 py-1 rounded hover:bg-[#5A5A5A]"
+              >
+                Economic Logs
+              </Link>
+          )}
+        </div>
         <div className="flex space-x-1">
           <button
             onClick={() => setCalendarView("TODAY")}

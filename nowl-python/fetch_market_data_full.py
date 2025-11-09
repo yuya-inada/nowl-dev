@@ -1,5 +1,6 @@
 # fetch_market_data_full.py
 # 統合版：CME先物(NKD=F, NIY=F) を含めた market data 取得＆POST送信スクリプト
+import uuid
 import requests
 import yfinance as yf
 from datetime import datetime, time, timedelta
@@ -46,6 +47,18 @@ def update_market_log(cur, log_id, status='SUCCESS', data_count=None, error_mess
             log_time = now()
         WHERE id = %s
     """, (status, data_count, error_message, log_id))
+
+def insert_info_log(cur, process_id, message, progress=0):
+    cur.execute("""
+        INSERT INTO market_data_logs (market_name, symbol, interval, fetch_start, status, error_message, process_id, progress, created_at, log_time)
+        VALUES (%s, %s, %s, now(), %s, %s, %s, %s, now(), now())
+    """, ("SYSTEM", "INFO", "1m", "INFO", message, process_id, progress))
+
+def insert_complete_log(cur, process_id):
+    cur.execute("""
+        INSERT INTO market_data_logs (market_name, symbol, interval, fetch_start, status, error_message, process_id, progress, created_at, log_time)
+        VALUES (%s, %s, %s, now(), %s, %s, %s, %s, now(), now())
+    """, ("SYSTEM", "ALL", "1m", "COMPLETE", "全市場データ取得完了", process_id, 100))
 
 # --- 対象市場 ---
 MARKETS = [
@@ -209,11 +222,27 @@ if __name__ == "__main__":
     end_day = datetime.strptime(args.end_date, "%Y-%m-%d") if args.end_date else start_day
 
     conn = psycopg2.connect(**DB_PARAMS)
+    cur = conn.cursor()
+    process_id = uuid.uuid4()  # 👈 各実行単位ごとに固有ID発行
+
     current_day = start_day
     while current_day <= end_day:
         print(f"=== 取得対象日: {current_day.strftime('%Y-%m-%d')} ===")
-        for market in MARKETS:
+        total = len(MARKETS)
+
+        for i, market in enumerate(MARKETS, 1):
+            progress = int(i / total * 100)
+            insert_info_log(cur, process_id, f"現在 {market['marketType']} ({i}/{total}) を取得中...", progress)
+            conn.commit()
+
             print(f">>> {market['marketType']} データ取得中...")
             process_market(market, current_day, conn)
+
+        # 1日分完了
+        insert_complete_log(cur, process_id)
+        conn.commit()
+
         current_day += timedelta(days=1)
+
+    cur.close()
     conn.close()

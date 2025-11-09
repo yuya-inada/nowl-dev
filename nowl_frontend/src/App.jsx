@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import EconomicCalendar from "./components/EconomicCalendar";
 import LogsEconomicCalendar from "./components/Logs_economic_calendar";
 import LogsEconomicEvent from "./components/Logs_economic_event";
+import CompositeChart from "./components/CompositeChart";
+import MarketDataLogs from "./components/Market_data_logs";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -177,6 +179,16 @@ export default function App() {
             element={
               currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
                 ? <LogsEconomicEvent />
+                : <Navigate to="/" />
+            }
+          />
+          
+          {/* Market Data Logs（管理者以上のみアクセス可） */}
+          <Route
+            path="/market-data-logs"
+            element={
+              currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
+                ? <MarketDataLogs />
                 : <Navigate to="/" />
             }
           />

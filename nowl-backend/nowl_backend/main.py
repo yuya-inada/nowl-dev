@@ -730,3 +730,48 @@ async def get_economic_event_logs(limit: int = 50):
         print("🔥 /api/economic-event-logs エラー:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --------------------------
+# 金融市場データログ取得 API
+# --------------------------
+# ログモデル
+class MarketDataLog(BaseModel):
+    id: int
+    market_name: Optional[str] = None
+    symbol: Optional[str] = None
+    status: Optional[str] = None
+    data_count: Optional[int] = None
+    fetch_start: Optional[datetime] = None
+    fetch_end: Optional[datetime] = None
+    error_message: Optional[str] = None
+
+@app.get("/api/market-data-logs/latest", response_model=List[MarketDataLog])
+async def get_latest_market_data_logs(limit: int = 50):
+    """
+    各 market_name ごとに最新の SUCCESS or FAILED ログを1件取得
+    """
+    query = """
+        SELECT DISTINCT ON (market_name)
+               id, market_name, symbol, status, data_count,
+               fetch_start, fetch_end, error_message
+        FROM market_data_logs
+        WHERE status IN ('SUCCESS', 'FAILED')
+        ORDER BY market_name, fetch_start DESC
+        LIMIT :limit
+    """
+    rows = await database.fetch_all(query=query, values={"limit": limit})
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/market-data-logs/info", response_model=List[MarketDataLog])
+async def get_info_market_data_logs(limit: int = 50):
+    query = """
+        SELECT id, market_name, symbol, status, fetch_start, fetch_end, error_message
+        FROM market_data_logs
+        WHERE status = 'INFO'
+        ORDER BY fetch_start DESC
+        LIMIT :limit
+    """
+    rows = await database.fetch_all(query=query, values={"limit": limit})
+    return [dict(r) for r in rows]
