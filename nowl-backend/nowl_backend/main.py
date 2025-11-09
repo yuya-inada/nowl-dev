@@ -749,18 +749,17 @@ class MarketDataLog(BaseModel):
 @app.get("/api/market-data-logs/latest", response_model=List[MarketDataLog])
 async def get_latest_market_data_logs(limit: int = 50):
     """
-    各 market_name ごとに最新の SUCCESS or FAILED ログを1件取得
+    各 market_name ごとに最新の SUCCESS or FAILED ログを取得
     """
     query = """
-        SELECT DISTINCT ON (market_name)
+        SELECT DISTINCT ON (market_name, fetch_start)
                id, market_name, symbol, status, data_count,
                fetch_start, fetch_end, error_message
         FROM market_data_logs
         WHERE status IN ('SUCCESS', 'FAILED')
         ORDER BY market_name, fetch_start DESC
-        LIMIT :limit
     """
-    rows = await database.fetch_all(query=query, values={"limit": limit})
+    rows = await database.fetch_all(query=query)
     return [dict(r) for r in rows]
 
 
