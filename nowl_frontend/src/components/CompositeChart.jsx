@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import { Link } from "react-router-dom";
 import {
@@ -25,8 +25,32 @@ ChartJS.register(
   TimeScale
 );
 
+// timeframe に応じて Chart.js の time unit を返す関数
+function getTimeUnit(timeframe) {
+  switch(timeframe) {
+    case "1m":
+    case "2m":
+    case "3m":
+    case "4m":
+    case "5m":
+    case "10m":
+    case "15m":
+    case "30m":
+    case "60m":
+      return "hour"; // 分・時間足
+    case "1d":
+      return "day";
+    case "1w":
+      return "week";
+    case "1M":
+      return "month";
+    default:
+      return "day";
+  }
+}
+
+
 export default function CompositeChart({ currentUser }) {
-  const [showMarketLogs, setShowMarketLogs] = useState(false);
   const chartIndices = [
     "N225",
     "TOPIX",
@@ -81,9 +105,9 @@ export default function CompositeChart({ currentUser }) {
   const [selectedChartIndices, setSelectedChartIndices] = useState([
     "日経先物(CME:USD)",
     "日経先物(CME:Yen)",
-    "N225",
-    "S&P500",
-    "米長期金利",
+    // "N225",
+    // "S&P500",
+    // "米長期金利",
     "10年期待インフレ率",
     "実質金利",
   ]);
@@ -126,60 +150,45 @@ export default function CompositeChart({ currentUser }) {
       setCandlesMap({});
       return;
     }
-
+  
     const now = new Date();
     let fromDate = new Date(now);
     switch (chartPeriod) {
-      case "1M": fromDate = new Date(now.setMonth(now.getMonth() - 1)); break;
-      case "3M": fromDate = new Date(now.setMonth(now.getMonth() - 3)); break;
-      case "6M": fromDate = new Date(now.setMonth(now.getMonth() - 6)); break;
-      case "1Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 1)); break;
-      case "5Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 5)); break;
-      case "6Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 6)); break;
-      case "7Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 7)); break;
-      case "8Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 8)); break;
-      case "9Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 9)); break;
-      case "10Y": fromDate = new Date(now.setFullYear(now.getFullYear() - 10)); break;
+      case "1M": fromDate.setMonth(now.getMonth() - 1); break;
+      case "3M": fromDate.setMonth(now.getMonth() - 3); break;
+      case "6M": fromDate.setMonth(now.getMonth() - 6); break;
+      case "1Y": fromDate.setFullYear(now.getFullYear() - 1); break;
+      case "5Y": fromDate.setFullYear(now.getFullYear() - 5); break;
+      case "6Y": fromDate.setFullYear(now.getFullYear() - 6); break;
+      case "7Y": fromDate.setFullYear(now.getFullYear() - 7); break;
+      case "8Y": fromDate.setFullYear(now.getFullYear() - 8); break;
+      case "9Y": fromDate.setFullYear(now.getFullYear() - 9); break;
+      case "10Y": fromDate.setFullYear(now.getFullYear() - 10); break;
       default: fromDate = new Date(0);
     }
-
-    console.log("📌 chartPeriod:", chartPeriod);
-    console.log("📌 fromDate (Local):", fromDate.toString());
-    console.log("📌 fromDate (ISO):", fromDate.toISOString());
-
+  
+    console.log("📌 chartPeriod:", chartPeriod, "fromDate:", fromDate.toISOString());
+  
     Promise.all(
-      selectedChartIndices.map((symbol) => {
-        const apiSymbol = symbolMapping[symbol] || symbol;
+      selectedChartIndices.map((displaySymbol) => {
+        const apiSymbol = symbolMapping[displaySymbol] || displaySymbol;
         const url = `http://localhost:8081/market-index-candles?symbol=${apiSymbol}&from=${fromDate.toISOString()}&interval=${selectedTimeframe}`;
         return fetch(url)
           .then(res => res.json())
-          .then(data => ({ symbol, data: Array.isArray(data) ? data : [] }));
+          .then(data => ({ displaySymbol, data: Array.isArray(data) ? data : [] }));
       })
     ).then(results => {
       const newMap = {};
-      results.forEach(({ symbol, data }) => { newMap[symbol] = data; });
+      results.forEach(({ displaySymbol, data }) => {
+        // フロントの表示名で格納
+        newMap[displaySymbol] = data;
+      });
       setCandlesMap(newMap);
-    }).catch(err => { console.error(err); setCandlesMap({}); });
+    }).catch(err => { 
+      console.error(err); 
+      setCandlesMap({}); 
+    });
   }, [chartPeriod, selectedTimeframe, selectedChartIndices]);
-
-  const formatLabels = (timestamps) => {
-    if (!timestamps || timestamps.length === 0) return [];
-    const dateObjs = timestamps.map(ts => new Date(ts));
-    let step = 1;
-    let options = { month: "short", day: "numeric" };
-
-    if (chartPeriod.endsWith("Y") && parseInt(chartPeriod) >= 1) {
-      options = { year: "numeric", month: "short" };
-      step = Math.ceil(dateObjs.length / 12); // 最大12ラベル
-    } else if (chartPeriod.endsWith("M")) {
-      options = { month: "short", day: "numeric" };
-      step = Math.ceil(dateObjs.length / 30); // 最大30ラベル
-    }
-
-    return dateObjs
-      .filter((_, i) => i % step === 0)
-      .map(d => d.toLocaleDateString("ja-JP", options));
-  };
 
   const lineStyles = {
     N225: { color: "#FF8C00", width: 1.5, dash: [] },
@@ -201,24 +210,26 @@ export default function CompositeChart({ currentUser }) {
     "実質金利": { color: "#FF69B4", width: 1.5, dash: [5,5] },
   };
 
-  const chartData = {
-    labels: candlesMap[selectedChartIndices[0]]?.map(c => c.timestamp) ?? [],
-    datasets: selectedChartIndices.map(symbol => {
-      const rawData = candlesMap[symbol]?.map(c => c.close) ?? [];
-      const base = rawData[0] ?? 1;
-      const data = rawData.map(v => base !== 0 ? v/base : 0);
-      const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
-      return {
-        label: displayNameMapping[symbol] || symbol,
-        data,
-        borderColor: style.color,
-        borderWidth: style.width,
-        borderDash: style.dash,
-        fill: false,
-        tension: 0.1,
-      };
-    }),
-  };
+  const chartData = useMemo(() => {
+    return {
+      labels: candlesMap[selectedChartIndices[0]]?.map(c => c.timestamp) ?? [],
+      datasets: selectedChartIndices.map(symbol => {
+        const rawData = candlesMap[symbol]?.map(c => c.close) ?? [];
+        const base = rawData[0] ?? 1;
+        const data = rawData.map(v => base !== 0 ? v/base : 0);
+        const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
+        return {
+          label: displayNameMapping[symbol] || symbol,
+          data,
+          borderColor: style.color,
+          borderWidth: style.width,
+          borderDash: style.dash,
+          fill: false,
+          tension: 0.1,
+        };
+      }),
+    };
+  }, [candlesMap, selectedChartIndices]);
 
   const chartOptions = {
     responsive: true,
@@ -232,20 +243,13 @@ export default function CompositeChart({ currentUser }) {
             const val = candlesMap[symbol]?.[ctx.dataIndex]?.close ?? 0;
             return `${displayNameMapping[symbol]||symbol}: ${val}`;
           },
-          labelColor: ctx => {
-            return {
-              borderColor: ctx.dataset.borderColor,
-              backgroundColor: ctx.dataset.borderColor, // 枠線色と同じで塗りつぶし
-              borderWidth: 0,
-              borderRadius: 50, // 丸にする
-            };
-          },
-          labelPointStyle: ctx => {
-            return {
-              pointStyle: "circle",   // 丸にする
-              rotation: 0,
-            };
-          },
+          labelColor: ctx => ({
+            borderColor: ctx.dataset.borderColor,
+            backgroundColor: ctx.dataset.borderColor,
+            borderWidth: 0,
+            borderRadius: 50,
+          }),
+          labelPointStyle: ctx => ({ pointStyle: "circle", rotation: 0 }),
         },
         usePointStyle: true,
         backgroundColor: "#2A2A2A",
@@ -261,33 +265,16 @@ export default function CompositeChart({ currentUser }) {
         display: true,
         position: "left",
         ticks: { color: "#fff", maxTicksLimit: 8 },
-        grid: {
-          color: "rgba(255,255,255,0.05)", // 背景グリッド線は薄く
-          drawTicks: true,
-          drawBorder: true,                 // 左の枠を表示
-          borderColor: "#FFD700",           // 左軸の枠線色
-          borderWidth: 2,
-        },
+        grid: { color: "rgba(255,255,255,0.05)", drawTicks: true, drawBorder: true, borderColor: "#FFD700", borderWidth: 2 },
       },
       x: {
-        ticks: { display: false, color: "#fff", maxTicksLimit: 10 },
-        grid: {
-          color: "rgba(255,255,255,0.05)", // 背景グリッド線は薄く
-          drawTicks: true,
-          drawBorder: true,                 // 下の枠を表示
-          borderColor: "#FFD700",           // 下軸の枠線色
-          borderWidth: 2,
-        },
+        type: "time",
+        time: { unit: getTimeUnit(selectedTimeframe), tooltipFormat: 'yyyy-MM-dd HH:mm' },
+        ticks: { color: "#fff", maxTicksLimit: 10 },
+        grid: { color: "rgba(255,255,255,0.05)", drawTicks: true, drawBorder: true, borderColor: "#FFD700", borderWidth: 2 },
       },
     },
-    layout: {
-      padding: {
-        top: 20,
-        bottom: 20,
-        left: 10,
-        right: 10,
-      },
-    },
+    layout: { padding: { top: 20, bottom: 20, left: 10, right: 10 } },
   };
 
   return (
@@ -358,7 +345,7 @@ export default function CompositeChart({ currentUser }) {
           <div
             className="h-full"
             style={{
-              minWidth: `${Math.max(...selectedChartIndices.map(sym => candlesMap[sym]?.length ?? 0)) * 10}px`
+              minWidth: `${Math.min(Math.max(...selectedChartIndices.map(sym => candlesMap[sym]?.length ?? 0)) * 10, 5000)}px`
             }}
           >
             {Object.keys(candlesMap).length > 0 ? (
