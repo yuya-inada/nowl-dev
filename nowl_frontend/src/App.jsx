@@ -12,6 +12,7 @@ import LogsEconomicCalendar from "./components/Logs_economic_calendar";
 import LogsEconomicEvent from "./components/Logs_economic_event";
 import CompositeChart from "./components/CompositeChart";
 import MarketDataLogs from "./components/Market_data_logs";
+import InvestorFlowLogs from "./components/Investor_flow_logs";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -19,7 +20,7 @@ export default function App() {
 
   // APIメッセージ取得
   useEffect(() => {
-    fetch('http://localhost:8080/')
+    fetch('http://localhost:8081/')
       .then(res => res.json())
       .then(data => setMessage(data.message))
       .catch(() => setMessage('API取得エラー'));
@@ -189,6 +190,16 @@ export default function App() {
             element={
               currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
                 ? <MarketDataLogs />
+                : <Navigate to="/" />
+            }
+          />
+
+          {/* 主体別売買動向　ログ画面 （管理者以上のみアクセス可）　*/}
+          <Route
+            path="/investor_flow/logs"
+            element={
+              currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
+                ? <InvestorFlowLogs />
                 : <Navigate to="/" />
             }
           />
