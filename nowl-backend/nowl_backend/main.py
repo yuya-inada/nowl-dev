@@ -6,6 +6,7 @@ from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, date, time, timedelta
+from numpy import apply_along_axis
 import pytz
 from typing import List, Optional, Dict
 from pydantic import BaseModel
@@ -800,3 +801,17 @@ async def get_info_market_data_logs():
             r_dict["process_id"] = str(r_dict["process_id"])
         result.append(r_dict)
     return result
+
+
+# --------------------------
+# 主体別売買動向のログ　API
+# --------------------------
+# @app.get("/admin/investor-flow/logs")
+# async def get_investor_flow_logs(user=Depends(get_current_admin_user)):
+#     query = """
+#         SELECT * FROM investor_flow_log
+#         ORDER BY run_at DESC
+#         LIMIT 50
+#     """
+#     logs = await database.fetch_all(query)
+#     return logs
