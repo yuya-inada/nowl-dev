@@ -806,12 +806,30 @@ async def get_info_market_data_logs():
 # --------------------------
 # 主体別売買動向のログ　API
 # --------------------------
-# @app.get("/admin/investor-flow/logs")
-# async def get_investor_flow_logs(user=Depends(get_current_admin_user)):
-#     query = """
-#         SELECT * FROM investor_flow_log
-#         ORDER BY run_at DESC
-#         LIMIT 50
-#     """
-#     logs = await database.fetch_all(query)
-#     return logs
+class InvestorFlowLog(BaseModel):
+    id: int
+    run_at: datetime
+    pdf_date: date
+    created_at: datetime
+    status: str
+    pdf_url: str
+    table_count: int
+    record_count: int
+    message: str
+
+@app.get("/investor_flow/logs", response_model=List[InvestorFlowLog])
+async def get_investor_flow_logs(limit: int = 50):
+    query = """
+        SELECT *
+        FROM investor_flow_log
+        ORDER BY pdf_date DESC
+        LIMIT :limit
+    """
+    try:
+        rows = await database.fetch_all(query=query, values={"limit": limit})
+        return [dict(r) for r in rows]
+    except Exception as e:
+        import traceback
+        print("🔥 /investor_flow/logs エラー:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

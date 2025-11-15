@@ -28,7 +28,7 @@ export default function AdminDashboard({ currentUser }) {  // ← propsで受け
               <GlobalIndices />
             </div>
             <div className="col-span-8 space-y-4">
-              <TokyoStockInvestor/>
+              <TokyoStockInvestor currentUser={currentUser} />
               <SentimentMeter />
             </div>
           </div>
