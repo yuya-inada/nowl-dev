@@ -38,8 +38,13 @@ async def sync_event_master():
     try:
         # 1️⃣ 最新イベントを取得
         query = """
-            SELECT id, indicator_name, country_code, importance,
-                   COALESCE(event_date, event_datetime::date) AS event_date, category
+            SELECT 
+                id,
+                indicator_name,
+                country_code,
+                importance,
+                event_datetime AS announcement_timestamp,
+                category
             FROM public.economic_calendar
             WHERE indicator_name ILIKE ANY(ARRAY[
                 '%FOMC%',
@@ -63,8 +68,10 @@ async def sync_event_master():
     deleted_count = 0
 
     # 2️⃣ 既存のevent_masterを全件取得
-    existing_records = await database.fetch_all("SELECT date, event_name FROM event_analysis.event_master")
-    existing_keys = {(r["date"], r["event_name"]) for r in existing_records}
+    existing_records = await database.fetch_all(
+    "SELECT announcement_timestamp, event_name FROM event_analysis.event_master"
+    )
+    existing_keys = {(r["announcement_timestamp"], r["event_name"]) for r in existing_records}
 
     new_keys = set()
     for r in rows:
@@ -72,26 +79,26 @@ async def sync_event_master():
         name = r["indicator_name"]
         country = r["country_code"]
         importance = r["importance"]
-        event_date = r["event_date"]
+        announcement_timestamp = r["announcement_timestamp"]
         category = r["category"]
 
-        key = (event_date, name)
+        key = (announcement_timestamp, name)
         new_keys.add(key)
 
         # 3️⃣ UPSERT（存在すればUPDATE、なければINSERT）
         upsert_query = """
             INSERT INTO event_analysis.event_master (
-                date, country, event_category, event_name,
+                announcement_timestamp, country, event_category, event_name,
                 impact_area, impact_level, content_prediction,
                 result, expected_market_reaction, surprise_level, data_source,
                 created_at, updated_at
             ) VALUES (
-                :date, :country, :event_category, :event_name,
+                :announcement_timestamp, :country, :event_category, :event_name,
                 :impact_area, :impact_level, :content_prediction,
                 :result, :expected_market_reaction, :surprise_level, :data_source,
                 NOW(), NOW()
             )
-            ON CONFLICT (date, event_name)
+            ON CONFLICT (announcement_timestamp, event_name)
             DO UPDATE SET
                 country = EXCLUDED.country,
                 event_category = EXCLUDED.event_category,
@@ -101,7 +108,7 @@ async def sync_event_master():
         """
         try:
             result = await database.execute(query=upsert_query, values={
-                "date": event_date,
+                "announcement_timestamp": announcement_timestamp,
                 "country": country,
                 "event_category": category or "Economic",
                 "event_name": name,
@@ -124,13 +131,20 @@ async def sync_event_master():
 
     # 4️⃣ 削除されたイベントを履歴化
     to_delete = existing_keys - new_keys
-    for date, name in to_delete:
+    for announcement_timestamp, name in to_delete:
         try:
             old_record = await database.fetch_one(
-                "SELECT * FROM event_analysis.event_master WHERE date = :date AND event_name = :name",
-                values={"date": date, "name": name},
+                """
+                SELECT * 
+                FROM event_analysis.event_master
+                WHERE announcement_timestamp = :announcement_timestamp
+                AND event_name = :name
+                """,
+                values={"announcement_timestamp": announcement_timestamp, "name": name},
             )
+
             if old_record:
+                # 履歴テーブルへ INSERT（event_master_history の schema に合わせる）
                 await database.execute(
                     """
                     INSERT INTO event_analysis.event_master_history
@@ -139,7 +153,7 @@ async def sync_event_master():
                     """,
                     values={
                         "event_id": old_record["event_id"],
-                        "date": old_record["date"],
+                        "date": old_record["announcement_timestamp"],
                         "country": old_record["country"],
                         "event_name": old_record["event_name"],
                         "data_source": old_record["data_source"],
@@ -149,9 +163,14 @@ async def sync_event_master():
 
             # 本体から削除
             await database.execute(
-                "DELETE FROM event_analysis.event_master WHERE date = :date AND event_name = :name",
-                values={"date": date, "name": name},
+                """
+                DELETE FROM event_analysis.event_master
+                WHERE announcement_timestamp = :announcement_timestamp
+                AND event_name = :name
+                """,
+                values={"announcement_timestamp": announcement_timestamp, "name": name},
             )
+
             deleted_count += 1
 
         except Exception as e:
