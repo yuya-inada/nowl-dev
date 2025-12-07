@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function TopNav({ currentUser, emailVerified, twoFactorEnabled, setCurrentView }) {
+  console.log("currentUser:", currentUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTerminal, setActiveTerminal] = useState("HOME");
   const navigate = useNavigate();
@@ -117,6 +118,14 @@ export default function TopNav({ currentUser, emailVerified, twoFactorEnabled, s
             {func.code}
           </button>
         ))}
+        {(currentUser?.role === "ROLE_ADMIN" || currentUser?.role === "ROLE_SUPERADMIN") && (
+          <button
+            onClick={() => navigate("/admin/logs")}
+            className="ml-2 px-3 py-1 text-xs rounded bg-[#5A3B1E] hover:bg-[#6A4A28] text-[#D4B08C] font-semibold"
+          >
+            Supply Logs
+          </button>
+        )}
       </div>
 
       {/* メニュー */}

@@ -10,9 +10,11 @@ import Register from "./pages/Register";
 import EconomicCalendar from "./components/EconomicCalendar";
 import LogsEconomicCalendar from "./components/Logs_economic_calendar";
 import LogsEconomicEvent from "./components/Logs_economic_event";
-import CompositeChart from "./components/CompositeChart";
+// import CompositeChart from "./components/CompositeChart";
 import MarketDataLogs from "./components/Market_data_logs";
 import InvestorFlowLogs from "./components/Investor_flow_logs";
+import SupplyAdminLogs from "./pages/Supply_Admin_Logs";
+import NowlAiAnalysis from "./pages/NowlAiAnalysis";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -87,6 +89,15 @@ export default function App() {
 
   return (
     <Router>
+      {/* ✅ ログイン済みなら全ページ共通で表示 */}
+      {currentUser && (
+        <TopNav
+          currentUser={currentUser}
+          emailVerified={true}
+          twoFactorEnabled={false}
+          setCurrentView={() => {}}
+        />
+      )}
       <div className="text-center mt-32 font-crimson px-4">
         <div className="inline-block border p-4 rounded">
           {/* ナビゲーション */}
@@ -148,12 +159,6 @@ export default function App() {
             path="/settings"
             element={currentUser ? (
               <>
-                <TopNav
-                  currentUser={currentUser}
-                  emailVerified={true}
-                  twoFactorEnabled={false}
-                  setCurrentView={() => {}}
-                />
                 <div className="mt-20 px-4">
                   <SettingView
                     formData={currentUser}
@@ -200,6 +205,30 @@ export default function App() {
             element={
               currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
                 ? <InvestorFlowLogs />
+                : <Navigate to="/" />
+            }
+          />
+          
+
+          {/* 全体需給指標テーブル　ログ画面 */}
+          <Route path="/admin/logs" element={<SupplyAdminLogs />} />
+
+          <Route
+            path="/ai/analysis"
+            element={
+              currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
+                ? <NowlAiAnalysis currentUser={currentUser} />
+                : <Navigate to="/" />
+            }
+          />
+
+          <Route
+            path="/admin/ai"
+            element={
+              currentUser &&
+              (currentUser.role === "ROLE_ADMIN" ||
+              currentUser.role === "ROLE_SUPERADMIN")
+                ? <NowlAiAnalysis />
                 : <Navigate to="/" />
             }
           />

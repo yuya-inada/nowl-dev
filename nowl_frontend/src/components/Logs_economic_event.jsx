@@ -4,6 +4,11 @@ const LogsEconomicEvent = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 🔹 ここを追加：マウント時にスクロールトップへ
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" }); // "smooth" でもOK
+  }, []);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     const d = new Date(dateStr);

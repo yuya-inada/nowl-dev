@@ -6,6 +6,11 @@ const MarketDataLogs = () => {
   const [activeTab, setActiveTab] = useState("latest"); // latest or info
   const [loading, setLoading] = useState(false);
 
+  // 🔹 ここを追加：マウント時にスクロールトップへ
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" }); // "smooth" でもOK
+  }, []);
+
   useEffect(() => {
     fetchLogs();
   }, [activeTab]);

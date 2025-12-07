@@ -3,6 +3,11 @@ import React, { useEffect, useState } from "react";
 export default function InvestorFlowLogs() {
     const [logs, setLogs] = useState([]);
 
+    // 🔹 ここを追加：マウント時にスクロールトップへ
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: "auto" }); // "smooth" でもOK
+    }, []);
+
     useEffect(() => {
       fetch("http://localhost:8081/investor_flow/logs", { credentials: "include" })
         .then(res => {

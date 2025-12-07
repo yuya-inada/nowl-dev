@@ -15,8 +15,6 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-[#1C1C1C] text-[#D4B08C] font-hiragino-mincho">
-      {/* ヘッダー */}
-      <TopNav />
 
       {/* 本体コンテンツ：ヘッダー分のパディングを確保 */}
       <div className="pt-[10px] w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
