@@ -2,19 +2,17 @@ import sys
 import os
 from fastapi import FastAPI, Query, HTTPException, Depends
 from contextlib import asynccontextmanager
-from databases import Database
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from datetime import datetime, date, time, timedelta
-from numpy import apply_along_axis
 import pytz
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import calendar
-from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional
+from nowl_backend.db import database
 
 # path調整
 sys.path.append("/Users/inadayuuya/nowl-dev/nowl-python")
@@ -24,14 +22,6 @@ from nowl_backend.routers import economic_events, event_analysis
 from economic_data.events.schedule import initialize_scheduler
 
 load_dotenv("/Users/inadayuuya/nowl-dev/.env")
-
-# --------------------------
-# DB接続設定
-# --------------------------
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set. Check your .env file")
-database = Database(DATABASE_URL)
 
 # --------------------------
 # FastAPI インスタンス
