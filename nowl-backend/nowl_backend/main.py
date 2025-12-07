@@ -74,6 +74,12 @@ app.add_middleware(
 # --------------------------
 app.include_router(economic_events.router)
 app.include_router(event_analysis.router, prefix="/analysis", tags=["Event Analysis"])
+from nowl_backend.routers import event_analysis_supply_demand
+app.include_router(
+    event_analysis_supply_demand.router,
+    prefix="/analysis/supply-demand",
+    tags=["Supply–Demand Analysis"]
+)
 
 # --------------------------
 # ルート確認
@@ -833,3 +839,74 @@ async def get_investor_flow_logs(limit: int = 50):
         print("🔥 /investor_flow/logs エラー:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --------------------------
+# 🔹 AI プロンプトテンプレート API
+# --------------------------
+
+class AIPromptTemplate(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    prompt_text: str
+    version: Optional[str] = None
+    status: Optional[str] = None
+    confidence_score: Optional[float] = None
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+@app.get("/api/ai/prompt-templates", response_model=List[AIPromptTemplate])
+async def list_ai_prompt_templates():
+    """
+    Nowl AIで使うプロンプトテンプレート一覧（現状は全件取得）
+    """
+    rows = await database.fetch_all(
+        """
+        SELECT
+          id,
+          name,
+          description,
+          prompt_text,
+          version,
+          status,
+          confidence_score::float AS confidence_score,
+          created_by,
+          created_at,
+          updated_at
+        FROM event_analysis.ai_prompt_templates
+        ORDER BY id ASC
+        """
+    )
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/ai/prompt-templates/{template_id}", response_model=AIPromptTemplate)
+async def get_ai_prompt_template(template_id: int):
+    """
+    特定IDのプロンプトテンプレ詳細（将来：編集画面用）
+    """
+    row = await database.fetch_one(
+        """
+        SELECT
+          id,
+          name,
+          description,
+          prompt_text,
+          version,
+          status,
+          confidence_score::float AS confidence_score,
+          created_by,
+          created_at,
+          updated_at
+        FROM event_analysis.ai_prompt_templates
+        WHERE id = :id
+        """,
+        {"id": template_id}
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Prompt template not found")
+
+    return dict(row)

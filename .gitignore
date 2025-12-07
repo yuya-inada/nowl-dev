@@ -96,3 +96,24 @@ nowl-backend/.vscode/
 
 # Guide
 README_Authentication_Guide.md
+
+# ==========================
+# 🔒 PRIVATE: AI / Analysis
+# ==========================
+
+# nowl-python
+nowl-python/api/
+nowl-python/economic_data
+
+# 🔒 Core backend (private)
+nowl-backend/nowl_backend/main.py
+nowl-backend/nowl_backend/routers/
+nowl-backend/nowl_backend/services/
+
+# 🔒 Event / Supply / AI
+nowl_backend/routers/event_analysis*
+nowl_backend/services/event_analysis*
+
+# Python cache
+__pycache__/
+*.pyc

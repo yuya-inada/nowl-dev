@@ -3,6 +3,11 @@ import React, { useState, useEffect } from "react";
 const LogsEconomicCalendar = () => {
   const [logs, setLogs] = useState([]);
 
+  // 🔹 ここを追加：マウント時にスクロールトップへ
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" }); // "smooth" でもOK
+  }, []);
+
   const fetchLogs = async () => {
     try {
       const res = await fetch(`http://localhost:8081/api/event-sync-logs?limit=50`);
