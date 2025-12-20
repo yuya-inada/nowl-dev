@@ -71,11 +71,7 @@ def scroll_page(page):
 # 🔥 核心：数値取得（PC / モバイル完全対応）
 # =========================
 def extract_values_from_row(row):
-    actual = None
-    forecast = None
-    previous = None
-
-    # 右寄せの数値セルをすべて取得
+    # 右寄せ数値セル（文字があるものだけ）を集める
     value_tds = row.query_selector_all(
         "td.datatable-v2_cell--align-end__BtDxO, "
         "td[class*='align-end']"
@@ -87,17 +83,31 @@ def extract_values_from_row(row):
         if txt:
             values.append(txt)
 
-    # JP版 Investing の実態：
-    # ・3つあれば → [結果, 予想, 前回]
-    # ・2つなら   → [結果, 前回]
-    # ・1つなら   → [結果]
-    if len(values) >= 1:
-        actual = values[0]
-    if len(values) == 2:
-        previous = values[1]
-    if len(values) >= 3:
-        forecast = values[1]
-        previous = values[2]
+    # ここが肝：actualセルが「発表済み」判定に使えるか？
+    # actual列は md:table-cell で出ていて、発表前は “空td” になりやすい
+    actual_cell = row.query_selector("td.hidden.md\\:table-cell.font-semibold")
+    actual_txt  = extract_text(actual_cell)
+
+    is_released = (actual_cell is not None and actual_txt is not None)
+
+    actual = forecast = previous = None
+
+    if is_released:
+        # 発表済み
+        if len(values) >= 1:
+            actual = values[0]
+        if len(values) == 2:
+            previous = values[1]
+        if len(values) >= 3:
+            forecast = values[1]
+            previous = values[2]
+    else:
+        # 未発表（未来）
+        if len(values) == 2:
+            forecast = values[0]
+            previous = values[1]
+        elif len(values) == 1:
+            previous = values[0]
 
     return actual, forecast, previous
 
@@ -163,8 +173,19 @@ def fetch_events(tab_label: str, base_date: date):
 
                 actual, forecast, previous = extract_values_from_row(row)
 
-                forecast = forecast if forecast is not None else "-"
-                previous = previous if previous is not None else "-"
+                # ---- 値の正規化（ここを追加） ----
+                forecast = forecast if forecast else "-"
+                previous = previous if previous else "-"
+
+                # デバッグ（欲しい時だけ）  
+                # 実行：(venv) inadayuuya@inadayuuyanoMacBook-Air events %  ECON_DEBUG=1 python fetch_economic_calendar.py
+                # これで「valuesが2の時に、どっちパターンか」が一発で見える。
+                if os.getenv("ECON_DEBUG") == "1":
+                    value_tds = row.query_selector_all(
+                        "td.datatable-v2_cell--align-end__BtDxO, td[class*='align-end']"
+                    )
+                    texts = [extract_text(td) for td in value_tds]
+                    print(f"[DBG] {current_date} {time_text} {country} {indicator} | raw={texts} | parsed=({actual},{forecast},{previous})")
 
                 stars = row.query_selector_all("svg use[href*='star-filled']")
                 importance = {1: "LOW", 2: "MEDIUM", 3: "HIGH"}.get(len(stars))
@@ -173,6 +194,7 @@ def fetch_events(tab_label: str, base_date: date):
                     current_date,
                     datetime.strptime(time_text, "%H:%M").time()
                 )
+                is_speech = actual is None and forecast == "-" and previous == "-"
 
                 events.append({
                     "event_datetime": event_dt,
@@ -180,11 +202,12 @@ def fetch_events(tab_label: str, base_date: date):
                     "country_code": country,
                     "indicator_name": indicator,
                     "actual_value": actual,
-                    "forecast_value": forecast if forecast else "-",
-                    "previous_value": previous if previous else "-",
+                    "forecast_value": forecast,
+                    "previous_value": previous,
                     "status": "結果あり" if actual else "未発表",
                     "importance": importance,
                     "category": None,
+                    "is_speech": is_speech,
                 })
 
             except Exception as e:
@@ -203,12 +226,36 @@ def save_to_db(events):
     with psycopg2.connect(**DB_PARAMS) as conn:
         with conn.cursor() as cur:
             for e in events:
+                params = (
+                    e["event_datetime"],
+                    e["event_date"],
+                    e["country_code"],
+                    e["indicator_name"],
+                    e["actual_value"],
+                    e["forecast_value"],
+                    e["previous_value"],
+                    e["status"],
+                    e["importance"],
+                    e["category"],
+                    e["is_speech"],
+                )
+
                 cur.execute("""
                     INSERT INTO public.economic_calendar
-                    (event_datetime, event_date, country_code, indicator_name,
-                     actual_value, forecast_value, previous_value,
-                     status, importance, category)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    (
+                        event_datetime,
+                        event_date,
+                        country_code,
+                        indicator_name,
+                        actual_value,
+                        forecast_value,
+                        previous_value,
+                        status,
+                        importance,
+                        category,
+                        is_speech
+                    )
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     ON CONFLICT (country_code, indicator_name, event_datetime)
                     DO UPDATE SET
                         actual_value   = EXCLUDED.actual_value,
@@ -216,9 +263,10 @@ def save_to_db(events):
                         previous_value = EXCLUDED.previous_value,
                         status         = EXCLUDED.status,
                         importance     = EXCLUDED.importance,
+                        is_speech      = EXCLUDED.is_speech,
                         updated_at     = NOW()
                     RETURNING (xmax = 0);
-                """, tuple(e.values()))
+                """, params)
 
                 if cur.fetchone()[0]:
                     ins += 1
