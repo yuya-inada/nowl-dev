@@ -488,31 +488,55 @@ async def get_calendar_day(date: str = Query(None, description="YYYY-MM-DD")):
     target_date = datetime.strptime(date, "%Y-%m-%d").date() if date else datetime.now(JST).date()
 
     query = """
-        SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value,
-               status, importance
-        FROM economic_calendar
-        WHERE DATE(event_datetime) = :target_date
-        ORDER BY event_datetime ASC
+        WITH cleaned AS (
+            SELECT
+                *,
+                regexp_replace(indicator_name, '\s*\(.*?\)', '', 'g') AS base_name
+            FROM economic_calendar
+            WHERE event_date = :target_date
+            AND indicator_name IS NOT NULL
+            AND TRIM(indicator_name) <> ''
+            AND TRIM(indicator_name) <> '-'
+        ),
+        ranked AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY country_code, base_name, event_date
+                    ORDER BY
+                        (actual_value IS NOT NULL) DESC,
+                        event_datetime DESC
+                ) AS rn
+            FROM cleaned
+        )
+        SELECT
+            event_datetime,
+            country_code,
+            indicator_name,
+            actual_value,
+            forecast_value,
+            previous_value,
+            status,
+            importance
+        FROM ranked
+        WHERE rn = 1
+        ORDER BY event_datetime ASC;
     """
-    try:
-        rows = await database.fetch_all(query=query, values={"target_date": target_date})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    rows = await database.fetch_all(query=query, values={"target_date": target_date})
 
     events = []
     for r in rows:
-        r_dict = dict(r)  # ← Record を dict に変換
-        dt = r_dict["event_datetime"]
+        dt = r["event_datetime"]
         events.append({
             "event_datetime": dt.isoformat() if dt else None,
-            "country_code": r_dict["country_code"],
-            "indicator_name": r_dict["indicator_name"],
-            "actual_value": r_dict["actual_value"],
-            "forecast_value": r_dict["forecast_value"],
-            "previous_value": r_dict["previous_value"],
-            "status": r_dict.get("status"),      # dict なので get が使える
-            "importance": r_dict.get("importance")
+            "country_code": r["country_code"],
+            "indicator_name": r["indicator_name"],
+            "actual_value": r["actual_value"],
+            "forecast_value": r["forecast_value"],
+            "previous_value": r["previous_value"],
+            "status": r["status"],
+            "importance": r["importance"],
         })
 
     return {
@@ -538,11 +562,30 @@ async def get_economic_calendar_week(date: str = Query(None, description="基準
     end_of_week = start_of_week + timedelta(days=4)  # 金曜まで表示（平日想定）
 
     query = """
-        SELECT event_datetime, country_code, indicator_name,
-               actual_value, forecast_value, previous_value,
-               status, importance
-        FROM economic_calendar
-        WHERE DATE(event_datetime) BETWEEN :start_date AND :end_date
+        WITH normalized AS (
+            SELECT
+                *,
+                regexp_replace(indicator_name, '\\s*\\(.*?\\)', '', 'g') AS base_name
+            FROM economic_calendar
+            WHERE DATE(event_datetime) BETWEEN :start_date AND :end_date
+        ),
+        ranked AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY base_name, DATE(event_datetime)
+                    ORDER BY
+                        (actual_value IS NOT NULL) DESC,
+                        event_datetime DESC
+                ) AS rn
+            FROM normalized
+        )
+        SELECT
+            event_datetime, country_code, indicator_name,
+            actual_value, forecast_value, previous_value,
+            status, importance
+        FROM ranked
+        WHERE rn = 1
         ORDER BY event_datetime ASC
     """
     try:
@@ -678,12 +721,13 @@ class EventSyncLog(BaseModel):
     id: int
     executed_at: datetime
     status: str
+    action: Optional[str]
+    action_detail: Optional[str]
+    error_message: Optional[str]
     added_count: int
     updated_count: int
     deleted_count: int
     duration_seconds: Optional[float]
-    error_message: Optional[str]
-    action: Optional[str]
 @app.get("/api/event-sync-logs", response_model=List[EventSyncLog])
 async def get_event_sync_logs(limit: int = 10):
     query = """

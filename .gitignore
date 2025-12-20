@@ -104,6 +104,7 @@ README_Authentication_Guide.md
 # nowl-python
 nowl-python/api/
 nowl-python/economic_data
+nowl-python/intelligence
 
 # 🔒 Core backend (private)
 nowl-backend/nowl_backend/main.py
