@@ -148,52 +148,52 @@ while the **Orchestrator (Coordinator Agent)** controls decision-making, executi
 # 🧭 Orchestrator（Coordinator Agent）
 
 ## 役割 / Responsibilities
-   - ユーザー意図の分類
-   - タスク分解と実行順序の決定
-	- 各Agentの出力を統合・矛盾調停
-	- 実行可否の判断（実行 / 停止 / 人間レビュー）
+- ユーザー意図の分類
+- タスク分解と実行順序の決定
+- 各Agentの出力を統合・矛盾調停
+- 実行可否の判断（実行 / 停止 / 人間レビュー）
 The Orchestrator acts as a gatekeeper,
 ensuring safety, cost control, and explainability.
 
 ## 🧑‍💼 Specialist Agents（専門エージェント）
 ### Nowl はドメイン別に分離された複数のAgentを持ちます。
+### 例 / Examples:
+- Market Agent：市場・指数・経済指標分析
+- Goal Agent：人生目標・中長期計画
+- Household Agent：家計・キャッシュフロー
+- Education Agent：学習・解説
+- （将来）Policy / Risk / Portfolio Agent
 
-例 / Examples:
-	- **Market Agent：市場・指数・経済指標分析**
-	- **Goal Agent：人生目標・中長期計画**
-	- **Household Agent：家計・キャッシュフロー**
-	- **Education Agent：学習・解説**
-	- **（将来）Policy / Risk / Portfolio Agent**
-
-各Agentは共通の処理パターンを持ちます。/ Each agent follows the same internal pipeline:
-	1. **Data Fetch (DB / API)**
-	2.	**Feature Summary**
-	3.	**Prompt Builder（prompt_preview）**
-	4.	**LLM Execution（via llm_runner）**
-	5.	**Output Summary**
-	6.	**Write to Shared Memory**
+### 各Agentは共通の処理パターンを持ちます。
+### Each agent follows the same internal pipeline:
+1. Data Fetch (DB / API)
+2.	Feature Summary
+3.	Prompt Builder（prompt_preview）
+4.	LLM Execution（via llm_runner）
+5.	Output Summary
+6.	Write to Shared Memory
 
 ### 🧠 Shared Memory（判断の共通基盤）
 
 Shared Memory は「会話履歴」ではなく、判断材料と意思決定の履歴を保存する共通掲示板です。
 
 保存される情報:
-	- Agent実行単位（run_id）
-	- Agentごとの出力・スコア
-	- レンダリング済みプロンプト
-	- LLMの生出力・解析結果
-	- 最終判断と理由
+- Agent実行単位（run_id）
+- Agentごとの出力・スコア
+- レンダリング済みプロンプト
+- LLMの生出力・解析結果
+- 最終判断と理由
 
 This enables:
-	- 完全なトレーサビリティ
-	- 人間によるレビュー・監査
-	- 判断プロセスの再現性
+- 完全なトレーサビリティ
+- 人間によるレビュー・監査
+- 判断プロセスの再現性
 
 ### 🤖 Why Nowl is an AI Agent
-	- 判断主体は LLM ではなく Orchestrator
-	- 実行は常にゲート制御される
-	- 複数Agentが状態を共有して協調
-	- すべての推論が記録・検証可能
+- 判断主体は LLM ではなく Orchestrator
+- 実行は常にゲート制御される
+- 複数Agentが状態を共有して協調
+- すべての推論が記録・検証可能
 The LLM is a tool.
 The system is the intelligence.
 
