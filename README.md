@@ -63,8 +63,6 @@ We will update progress logs and UI designs here as development proceeds.
 
 ---
 
----
-
 ## 🤖 AIエージェント構成 / AI Agent Architecture
 
 ### 🧠 概要 / Overview
@@ -126,13 +124,13 @@ while the **Orchestrator (Coordinator Agent)** controls decision-making, executi
 │                    Specialist Agents (Workers)                           │
 │  Market / Goal / Household / Education / Policy / Portfolio              │
 │                                                                          │
-│  共通内部フロー:                                                           │
+│ 共通内部フロー:                                                            │
 │   Data Fetch → Feature Summary → Prompt Builder → LLM Request            │
 │   → Output Summary → Shared Memory                                       │
 └───────────────┬──────────────────────────────────────────────────────────┘
                 ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│               Shared Memory / State Layer (PostgreSQL)                   |
+│               Shared Memory / State Layer (PostgreSQL)                   │
 │  - agent_runs / agent_outputs                                            │
 │  - prompts / llm_responses                                               │
 │  - decision_log                                                          │
@@ -148,12 +146,12 @@ while the **Orchestrator (Coordinator Agent)** controls decision-making, executi
 # 🧭 Orchestrator（Coordinator Agent）
 
 ## 役割 / Responsibilities
-- ユーザー意図の分類
-- タスク分解と実行順序の決定
-- 各Agentの出力を統合・矛盾調停
-- 実行可否の判断（実行 / 停止 / 人間レビュー）
-The Orchestrator acts as a gatekeeper,
-ensuring safety, cost control, and explainability.
+•	ユーザー意図の分類
+•	タスク分解と実行順序の決定
+•	各Agentの出力を統合・矛盾調停
+•	実行可否の判断（実行 / 停止 / 人間レビュー）
+
+The Orchestrator acts as a gatekeeper,ensuring safety, cost control, and explainability.
 
 ## 🧑‍💼 Specialist Agents（専門エージェント）
 ### Nowl はドメイン別に分離された複数のAgentを持ちます。
