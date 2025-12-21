@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import re
+from time import time
 
 # =========================
 # ENV / DB
@@ -114,6 +115,43 @@ def extract_values_from_row(row):
 # =========================
 # Main Fetch
 # =========================
+def extract_importance(row, indicator=None):
+    """
+    重要度セルは star-filled が3つ並ぶ（opacity-60/20で強さが変わる）
+    → opacity-60 の数で LOW/MEDIUM/HIGH を決める
+    """
+
+    # 重要度っぽい td を探す（row内の td を走査）
+    tds = row.query_selector_all("td")
+    target_td = None
+
+    for td in tds:
+        uses = td.query_selector_all("use[href*='star-filled']")
+        if len(uses) >= 3:  # 重要度セルは基本3つある
+            target_td = td
+            break
+
+    if not target_td:
+        if os.getenv("ECON_DEBUG") == "1":
+            print(f"[STAR] {indicator} no-star-td")
+        return None
+
+    # 有効な星（opacity-60）だけ数える
+    active = target_td.query_selector_all("svg[class*='opacity-60'] use[href*='star-filled']")
+    count = len(active)
+
+    if os.getenv("ECON_DEBUG") == "1":
+        all_uses = target_td.query_selector_all("use[href*='star-filled']")
+        print(f"[STAR] {indicator} active={count} total={len(all_uses)}")
+
+    if count == 1:
+        return "LOW"
+    if count == 2:
+        return "MEDIUM"
+    if count >= 3:
+        return "HIGH"
+    return None
+    
 def fetch_events(tab_label: str, base_date: date):
     events = []
     current_date = None
@@ -187,8 +225,7 @@ def fetch_events(tab_label: str, base_date: date):
                     texts = [extract_text(td) for td in value_tds]
                     print(f"[DBG] {current_date} {time_text} {country} {indicator} | raw={texts} | parsed=({actual},{forecast},{previous})")
 
-                stars = row.query_selector_all("svg use[href*='star-filled']")
-                importance = {1: "LOW", 2: "MEDIUM", 3: "HIGH"}.get(len(stars))
+                importance = extract_importance(row, indicator) or "LOW"
 
                 event_dt = datetime.combine(
                     current_date,
@@ -279,15 +316,79 @@ def save_to_db(events):
 # Entry
 # =========================
 if __name__ == "__main__":
+    start_ts = time()
+
     today = date.today()
     jobs = [
-        ("昨日", today - timedelta(days=1)),
-        ("本日", today),
-        ("今週", today),
-        ("来週", today + timedelta(days=7)),
+        ("timeFrame_yesterday", "昨日", today - timedelta(days=1)),
+        ("timeFrame_today", "本日", today),
+        ("timeFrame_thisWeek", "今週", today),
+        ("timeFrame_nextWeek", "来週", today + timedelta(days=7)),
     ]
 
-    for label, d in jobs:
+    stats = {}
+    total_added = 0
+    total_updated = 0
+
+    # ---- 既存仕様：ここは残す（＋集計を足すだけ） ----
+    for key, label, d in jobs:
         events = fetch_events(label, d)
         ins, upd = save_to_db(events)
+
         print(f"[{label}] 新規:{ins} 更新:{upd}")
+
+        stats[key] = {
+            "added": ins,
+            "updated": upd,
+            "skipped": 0
+        }
+        total_added += ins
+        total_updated += upd
+
+    # =========================
+    # ログ用 action_detail 組み立て
+    # =========================
+    total = total_added + total_updated
+
+    lines = [
+        f"合計: {total} 件",
+        ""
+    ]
+
+    for k, v in stats.items():
+        lines.append(
+            f"{k}: added={v['added']} updated={v['updated']} skipped={v['skipped']}"
+        )
+
+    action_detail = "\n".join(lines)
+
+    duration = round(time() - start_ts, 2)
+
+    # =========================
+    # event_sync_logs へ保存
+    # =========================
+    with psycopg2.connect(**DB_PARAMS) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO public.event_sync_logs
+                (
+                    status,
+                    action,
+                    feature_name,
+                    added_count,
+                    updated_count,
+                    deleted_count,
+                    duration_seconds,
+                    action_detail
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                "success",
+                "Economic Calendar Fetch",
+                "economic_calendar",
+                total_added,
+                total_updated,
+                0,
+                duration,
+                action_detail
+            ))
