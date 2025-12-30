@@ -124,3 +124,9 @@ nowl-python/ai_agents/
 # =====================================
 tmp/
 .cache/
+
+# Proprietary datasets
+nowl-python/economic_data/data/
+nowl-python/economic_data/boj/
+nowl-python/economic_data/screenshots/
+nowl-python/economic_data/supply_demand/boj_etf/boj/
