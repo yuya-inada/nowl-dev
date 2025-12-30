@@ -105,8 +105,10 @@ README_Authentication_Guide.md
 nowl-python/api/
 nowl-python/economic_data
 nowl-python/intelligence
+nowl-python/ai_agents
 
 # 🔒 Core backend (private)
+nowl-backend/
 nowl-backend/nowl_backend/main.py
 nowl-backend/nowl_backend/routers/
 nowl-backend/nowl_backend/services/

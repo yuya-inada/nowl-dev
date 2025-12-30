@@ -10,11 +10,11 @@ import Register from "./pages/Register";
 import EconomicCalendar from "./components/EconomicCalendar";
 import LogsEconomicCalendar from "./components/Logs_economic_calendar";
 import LogsEconomicEvent from "./components/Logs_economic_event";
-// import CompositeChart from "./components/CompositeChart";
 import MarketDataLogs from "./components/Market_data_logs";
 import InvestorFlowLogs from "./components/Investor_flow_logs";
 import SupplyAdminLogs from "./pages/Supply_Admin_Logs";
 import NowlAiAnalysis from "./pages/NowlAiAnalysis";
+import MorningBriefPage from "./pages/MorningBriefPage";
 
 export default function App() {
   const [message, setMessage] = useState('');
@@ -22,7 +22,7 @@ export default function App() {
 
   // APIメッセージ取得
   useEffect(() => {
-    fetch('http://localhost:8081/')
+    fetch('http://localhost:8091/')
       .then(res => res.json())
       .then(data => setMessage(data.message))
       .catch(() => setMessage('API取得エラー'));
@@ -229,6 +229,15 @@ export default function App() {
               (currentUser.role === "ROLE_ADMIN" ||
               currentUser.role === "ROLE_SUPERADMIN")
                 ? <NowlAiAnalysis />
+                : <Navigate to="/" />
+            }
+          />
+
+          <Route
+            path="/admin/morning-brief"
+            element={
+              currentUser && (currentUser.role === "ROLE_ADMIN" || currentUser.role === "ROLE_SUPERADMIN")
+                ? <MorningBriefPage currentUser={currentUser} />
                 : <Navigate to="/" />
             }
           />
