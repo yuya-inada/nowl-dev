@@ -109,6 +109,9 @@ nowl-python/ai_agents
 
 # 🔒 Core backend (private)
 nowl-backend/
+# 🔒 Spring Boot secrets
+nowl-backend/src/main/resources/application.properties
+nowl-backend/src/main/resources/application.yml
 nowl-backend/nowl_backend/main.py
 nowl-backend/nowl_backend/routers/
 nowl-backend/nowl_backend/services/
