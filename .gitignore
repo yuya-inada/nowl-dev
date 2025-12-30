@@ -1,81 +1,88 @@
-# =========================
-# ルート共通設定
-# =========================
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Node modules & build output
-node_modules/
-dist/
-dist-ssr/
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea/
+# =====================================
+# 🧩 Global / OS / Editor
+# =====================================
 .DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Python cache & virtual env
+# =====================================
+# 🧩 Logs
+# =====================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =====================================
+# 🧩 Node / Frontend
+# =====================================
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# =====================================
+# 🧩 Python
+# =====================================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.pyc
 *.egg
 *.egg-info/
 .eggs/
 .venv/
 venv/
 
-# Environment files
-.env
-nowl_backend/.env
-nowl_frontend/.env
-
-# FastAPI / DB
+# =====================================
+# 🧩 Databases & Data files
+# =====================================
 *.db
 *.sqlite3
+*.csv
+*.xlsx
+*.pdf
+*.parquet
 
-# Docker
+# =====================================
+# 🧩 Docker
+# =====================================
 *.pid
 *.seed
 *.pid.lock
 
-# OS files
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# =====================================
+# 🧩 Secrets / Env
+# =====================================
+.env
+.env.*
+nowl_backend/.env
+nowl_frontend/.env
 
-# Vite
-.vite/
+# Spring Boot secrets
+nowl-backend/src/main/resources/application.properties
+nowl-backend/src/main/resources/application.yml
 
-# =========================
-# Backend-specific (Java / Maven / Gradle)
-# =========================
-
-# Maven / Gradle build output
+# =====================================
+# 🧩 Maven / Gradle
+# =====================================
 nowl-backend/target/
 nowl-backend/build/
 nowl-backend/.mvn/wrapper/maven-wrapper.jar
-!nowl-backend/**/src/main/**/target/
-!nowl-backend/**/src/test/**/target/
-!nowl-backend/**/src/main/**/build/
-!nowl-backend/**/src/test/**/build/
 
-# IDE files
+# =====================================
+# 🧩 Java IDE
+# =====================================
 nowl-backend/.idea/
 nowl-backend/.classpath
 nowl-backend/.factorypath
@@ -83,43 +90,37 @@ nowl-backend/.project
 nowl-backend/.settings/
 nowl-backend/.springBeans
 nowl-backend/.sts4-cache
-
-# NetBeans
-nowl-backend/nbproject/private/
-nowl-backend/nbbuild/
-nowl-backend/dist/
-nowl-backend/nbdist/
-nowl-backend/.nb-gradle/
-
-# VS Code (backend)
 nowl-backend/.vscode/
 
-# Guide
-README_Authentication_Guide.md
+# =====================================
+# 🧩 Git / Backups
+# =====================================
+*.bundle
+*.bak
+*.backup
+*.dump
+*.sql
 
-# ==========================
-# 🔒 PRIVATE: AI / Analysis
-# ==========================
+# =====================================
+# 🧩 Nowl: PRIVATE ASSETS (絶対GitHubに出さない)
+# =====================================
 
-# nowl-python
-nowl-python/api/
-nowl-python/economic_data
-nowl-python/intelligence
-nowl-python/ai_agents
+# AI outputs / signals
+nowl-python/morning_briefs/
+nowl-python/ai_outputs/
+nowl-python/predictions/
+nowl-python/signals/
 
-# 🔒 Core backend (private)
-nowl-backend/
-# 🔒 Spring Boot secrets
-nowl-backend/src/main/resources/application.properties
-nowl-backend/src/main/resources/application.yml
-nowl-backend/nowl_backend/main.py
-nowl-backend/nowl_backend/routers/
-nowl-backend/nowl_backend/services/
+# Crawled / proprietary data
+nowl-python/economic_data/data/
+nowl-python/raw_data/
 
-# 🔒 Event / Supply / AI
-nowl_backend/routers/event_analysis*
-nowl_backend/services/event_analysis*
+# Internal agent logic (戦略の核)
+nowl-python/intelligence/
+nowl-python/ai_agents/
 
-# Python cache
-__pycache__/
-*.pyc
+# =====================================
+# 🧩 Temporary / runtime
+# =====================================
+tmp/
+.cache/
