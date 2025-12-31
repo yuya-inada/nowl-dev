@@ -71,20 +71,20 @@ export default function CompositeChart({ currentUser }) {
     "実質金利",
   ];
 
-  const symbolMapping = {
-    "S&P500": "^GSPC",
-    "NYダウ": "^DJI",
-    "NASDAQ": "^IXIC",
-    "N225": "^N225",
-    "USD/JPY": "JPY=X",
-    "USD/EUR": "EURUSD=X",
-    "EUR/JPY": "EURJPY=X",
-    "BTC/USD": "BTC-USD",
+  const marketTypeMapping = {
+    "S&P500": "S&P500",
+    "NASDAQ": "NASDAQ",
+    "NYダウ": "NYダウ",
+    "N225": "N225",
+    "USD/JPY": "USD/JPY",
+    "USD/EUR": "USD/EUR",
+    "EUR/JPY": "EUR/JPY",
+    "BTC/USD": "BTC/USD",
     "日経先物(CME:USD)": "CME_NKD_USD",
     "日経先物(CME:Yen)": "CME_NIY_YEN",
-    "米長期金利": "^TNX",
-    "10年期待インフレ率": "^T10YIE",
-    "実質金利": "REAL_RATE",
+    "米長期金利": "米長期金利",
+    "10年期待インフレ率": "10年期待インフレ率",
+    "実質金利": "実質金利",
   };
 
   const displayNameMapping = {
@@ -171,8 +171,8 @@ export default function CompositeChart({ currentUser }) {
   
     Promise.all(
       selectedChartIndices.map((displaySymbol) => {
-        const apiSymbol = symbolMapping[displaySymbol] || displaySymbol;
-        const url = `http://localhost:8081/market-index-candles?symbol=${apiSymbol}&from=${fromDate.toISOString()}&interval=${selectedTimeframe}`;
+        const apiSymbol = marketTypeMapping[displaySymbol];
+        const url = `http://localhost:8081/market-index-candles?symbol=${encodeURIComponent(apiSymbol)}&from=${fromDate.toISOString()}&interval=${selectedTimeframe}`;
         return fetch(url)
           .then(res => res.json())
           .then(data => ({ displaySymbol, data: Array.isArray(data) ? data : [] }));
@@ -211,23 +211,43 @@ export default function CompositeChart({ currentUser }) {
   };
 
   const chartData = useMemo(() => {
+
+    // ① 全銘柄の timestamp を union
+    const allTimestamps = Array.from(
+      new Set(
+        selectedChartIndices.flatMap(sym =>
+          candlesMap[sym]?.map(c => c.timestamp) ?? []
+        )
+      )
+    ).sort((a,b)=> new Date(a) - new Date(b));
+  
     return {
-      labels: candlesMap[selectedChartIndices[0]]?.map(c => c.timestamp) ?? [],
+      labels: allTimestamps,
+  
       datasets: selectedChartIndices.map(symbol => {
-        const rawData = candlesMap[symbol]?.map(c => c.close) ?? [];
-        const base = rawData[0] ?? 1;
-        const data = rawData.map(v => base !== 0 ? v/base : 0);
-        const style = lineStyles[symbol] || { color: "#ccc", width: 2, dash: [] };
+        const map = new Map(
+          (candlesMap[symbol] ?? []).map(c => [c.timestamp, c.close])
+        );
+  
+        // ② 欠損は null にする（Chart.js は線を切る）
+        const data = allTimestamps.map(ts => map.get(ts) ?? null);
+  
+        const base = data.find(v => v !== null) ?? 1;
+        const normalized = data.map(v => v !== null ? v / base : null);
+  
+        const style = lineStyles[symbol] || { color:"#ccc", width:2, dash:[] };
+  
         return {
           label: displayNameMapping[symbol] || symbol,
-          data,
+          data: normalized,
           borderColor: style.color,
           borderWidth: style.width,
           borderDash: style.dash,
+          spanGaps: false,
           fill: false,
-          tension: 0.1,
+          tension: 0.1
         };
-      }),
+      })
     };
   }, [candlesMap, selectedChartIndices]);
 

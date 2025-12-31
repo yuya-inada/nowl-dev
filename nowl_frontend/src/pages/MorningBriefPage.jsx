@@ -91,9 +91,9 @@ export default function MorningBriefPage({ currentUser }) {
           </span>
         </div>
 
-        {brief.ai_decision && (
+        {brief.aiDecision && (
           <div className="mt-2 text-sm text-blue-400">
-            🧭 Tone: {brief.ai_decision.tone} / Continuation: {brief.ai_decision.continuation}
+            🧭 Tone: {brief.aiDecision.tone} / Continuation: {brief.aiDecision.continuation}
           </div>
         )}
       </div>
