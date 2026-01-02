@@ -44,7 +44,7 @@ export default function MorningBriefPage({ currentUser }) {
   const [attribution, setAttribution] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:8090/analysis/ai-factor-attribution/latest")
+    fetch("http://localhost:8081/analysis/ai-factor-attribution/latest")
       .then(res => {
         if (!res.ok) return null;   // 404などは null 扱い
         return res.json();
