@@ -40,6 +40,25 @@ export default function MorningBriefPage({ currentUser }) {
       .catch(console.error);
   }, []);
 
+  // AI Attribution（反省）
+  const [attribution, setAttribution] = useState(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8090/analysis/ai-factor-attribution/latest")
+      .then(res => {
+        if (!res.ok) return null;   // 404などは null 扱い
+        return res.json();
+      })
+      .then(data => {
+        if (!data || !data.factor_scores) {
+          setAttribution(null);    // 表示しない
+        } else {
+          setAttribution(data);
+        }
+      })
+      .catch(() => setAttribution(null));
+  }, []);
+
   if (error) {
     return (
       <div className="min-h-screen bg-[#1C1C1C] text-red-400 p-6">
@@ -136,6 +155,69 @@ export default function MorningBriefPage({ currentUser }) {
                 {performance.avg_return}%
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧠 AI Reflection */}
+      {attribution && (
+        <div className="border border-[#3A3A3A] rounded p-4 mb-6 bg-[#101820]">
+          <h2 className="text-xl font-bold mb-2 text-[#7FDBFF]">
+            🧠 AI Reflection (Why did Nowl {attribution.label === "WIN" ? "win" : "lose"}?)
+          </h2>
+
+          <div className="flex gap-6 mb-4">
+            <div>
+              <div className="text-xs text-[#9A8F80]">PnL</div>
+              <div className={`text-lg font-bold ${attribution.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {attribution.pnl}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-[#9A8F80]">Return</div>
+              <div className={`text-lg font-bold ${attribution.return_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {attribution.return_pct}%
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-[#9A8F80]">Result</div>
+              <div className={`text-lg font-bold ${attribution.label === "WIN" ? "text-green-400" : "text-red-400"}`}>
+                {attribution.label}
+              </div>
+            </div>
+          </div>
+
+          {/* 因子評価 */}
+          <table className="w-full text-sm border border-[#333]">
+            <thead>
+              <tr className="bg-[#1A2A3A]">
+                <th className="p-2 text-left">Factor</th>
+                <th>Signal</th>
+                <th>Correct?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(attribution?.factor_scores || {})
+                .filter(([k]) => ["flow", "macro", "divergence", "surprise", "sentiment"].includes(k))
+                .map(([k, v]) => (
+                  <tr key={k} className="border-t border-[#333]">
+                    <td className="p-2 capitalize">{k}</td>
+                    <td className="text-center">
+                      {v.signal ?? v.real_rate_pressure ?? v.severity ?? v.top_score ?? v.tone}
+                    </td>
+                    <td className={`text-center font-bold ${v.correct ? "text-green-400" : "text-red-400"}`}>
+                      {v.correct ? "✔" : "✖"}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+
+          <div className="mt-3 text-xs text-[#9A8F80]">
+            Expected: {attribution.factor_scores.expected_return_sign} / 
+            Actual: {attribution.factor_scores.actual_return_sign}
           </div>
         </div>
       )}
