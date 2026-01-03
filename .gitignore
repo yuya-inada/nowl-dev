@@ -111,13 +111,11 @@ nowl-python/ai_outputs/
 nowl-python/predictions/
 nowl-python/signals/
 
-# Crawled / proprietary data
-nowl-python/economic_data/data/
-nowl-python/raw_data/
-
-# Internal agent logic (戦略の核)
-nowl-python/intelligence/
-nowl-python/ai_agents/
+# AI runtime outputs (keep code, ignore generated data)
+nowl-python/morning_briefs/
+nowl-python/ai_outputs/
+nowl-python/predictions/
+nowl-python/signals/
 
 # =====================================
 # 🧩 Temporary / runtime
@@ -125,6 +123,9 @@ nowl-python/ai_agents/
 tmp/
 .cache/
 
+# Crawled / proprietary data
+nowl-python/economic_data/data/
+nowl-python/raw_data/
 # Proprietary datasets
 nowl-python/economic_data/data/
 nowl-python/economic_data/boj/

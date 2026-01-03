@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 export default function MorningBriefPage({ currentUser }) {
   const [brief, setBrief] = useState(null);
   const [error, setError] = useState(null);
+  const dataStatus = brief?.data_status || [];
 
   // 画面上部を表示
   useEffect(() => {
@@ -82,6 +83,17 @@ export default function MorningBriefPage({ currentUser }) {
       <div className="mb-4 text-sm text-[#9A8F80]">
         Logged in as {currentUser.username} ({currentUser.role})
       </div>
+
+      {dataStatus.length > 0 && (
+        <div className="border border-yellow-700 bg-[#201A10] p-3 mb-4 text-yellow-300 text-sm">
+          <div className="font-bold mb-1">📡 Market Data Status</div>
+          <ul className="list-disc pl-5">
+            {dataStatus.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Morning Brief */}
       <div className="border border-[#3A3A3A] rounded p-6 mb-6 bg-[#151515] text-left">
