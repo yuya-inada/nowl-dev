@@ -38,6 +38,19 @@ const MarketDataLogs = () => {
     return utcDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
   };
 
+  const statusColor = (status) => {
+    switch (status) {
+      case "SUCCESS": return "text-green-400";
+      case "NO_NEW_DATA": return "text-blue-400";
+      case "MARKET_CLOSED": return "text-purple-400";
+      case "VENDOR_DELAY": return "text-yellow-300";
+      case "FAILED": return "text-red-400";
+      case "INFO": return "text-yellow-300";
+      case "COMPLETE": return "text-green-300";
+      default: return "text-gray-300";
+    }
+  };
+
   return (
     <div className="pt-10 p-2">
       <div className="bg-[#2B2B2B] text-[#D4B08C] rounded-2xl shadow-xl w-full max-w-[98%] mx-auto">
@@ -90,11 +103,9 @@ const MarketDataLogs = () => {
                     <td className="px-2 py-1 text-center">{log.id}</td>
                     <td className="px-2 py-1 text-center">{log.market_name}</td>
                     <td className="px-2 py-1 text-center">{toJST(log.market_datatime)}</td>
-                    <td className={`font-semibold ${
-                        log.status === "SUCCESS" ? "text-green-400" :
-                        log.status === "FAILED" ? "text-red-400" :
-                        log.status === "INFO" ? "text-yellow-300" : "text-gray-300"
-                    }`}>{log.status}</td>
+                    <td className={`font-semibold ${statusColor(log.status)}`}>
+                      {log.status}
+                    </td>
                     {activeTab === "latest" && <td className="px-2 py-1 text-center">{log.data_count ?? "-"}</td>}
                     <td className="px-2 py-1 text-center">{log.process_id ?? "-"}</td>
                     <td className="px-2 py-1 text-center">{log.progress ?? "-"}</td>
