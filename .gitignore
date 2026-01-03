@@ -133,5 +133,3 @@ nowl-python/economic_data/screenshots/
 nowl-python/economic_data/supply_demand/boj_etf/boj/
 nowl-python/*.csv
 
-# 🚫 Proprietary financial data (never commit)
-nowl-python/economic_data/
